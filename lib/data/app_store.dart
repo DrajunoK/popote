@@ -80,6 +80,26 @@ class AppStore extends Notifier<AppData> {
     return id;
   }
 
+  /// Retire un groupe et tout ce qui lui appartient de cet appareil.
+  void removeGroup(String id) {
+    final groups = state.groups.where((g) => g.id != id).toList();
+    if (groups.isEmpty) return;
+    _set(state.copyWith(
+      groups: groups,
+      currentGroupId: state.currentGroupId == id ? groups.first.id : state.currentGroupId,
+      recipes: state.recipes.where((r) => r.groupId != id).toList(),
+      entries: state.entries.where((e) => e.groupId != id).toList(),
+      shopping: state.shopping.where((i) => i.groupId != id).toList(),
+      lists: {...state.lists}..remove(id),
+    ));
+  }
+
+  void renameGroup(String id, String name) {
+    final clean = name.trim();
+    if (clean.isEmpty) return;
+    _set(state.copyWith(groups: [for (final g in state.groups) g.id == id ? g.copyWith(name: clean) : g]));
+  }
+
   void updateRules(String groupId, PlannerRules rules) => _set(state.copyWith(
         groups: [for (final g in state.groups) g.id == groupId ? g.copyWith(rules: rules) : g],
       ));

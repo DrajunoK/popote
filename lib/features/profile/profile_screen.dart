@@ -37,7 +37,8 @@ class ProfileScreen extends ConsumerWidget {
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(user?.name ?? 'Invité', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 2),
-                  Text('Connecté avec Google', style: TextStyle(fontSize: 13, color: c.muted)),
+                  Text(user == null || user.email.isEmpty ? 'Connecté avec Google' : user.email,
+                      style: TextStyle(fontSize: 13, color: c.muted)),
                 ]),
               ]),
               const SizedBox(height: 18),

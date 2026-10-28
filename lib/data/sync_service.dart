@@ -327,6 +327,35 @@ class SyncService {
     }
   }
 
+  /// Quitte un groupe (le groupe disparaît s'il n'a plus de membre).
+  Future<bool> leaveGroup(String id) => _removeGroup(id, () async {
+        await _client.rpc('leave_group', params: {'p_group_id': id});
+        return true;
+      });
+
+  /// Supprime un groupe pour tous ses membres (réservé aux admins : sinon la ligne n'est pas supprimée).
+  Future<bool> deleteGroup(String id) => _removeGroup(id, () async {
+        final deleted = await _client.from('groups').delete().eq('id', id).select();
+        return deleted.isNotEmpty;
+      });
+
+  Future<bool> _removeGroup(String id, Future<bool> Function() remote) async {
+    if (AuthService.configured && _client.auth.currentUser != null && _knownGroups.contains(id)) {
+      try {
+        if (!await remote()) return false;
+      } catch (_) {
+        return false;
+      }
+    }
+    _ref.read(appStoreProvider.notifier).removeGroup(id);
+    _snap.removeWhere((k, _) => k.startsWith('$id|'));
+    _knownGroups.remove(id);
+    _groupSnap.remove(id);
+    _saveState();
+    schedule();
+    return true;
+  }
+
   Future<void> _joinPending() async {
     final prefs = _ref.read(prefsProvider);
     final code = prefs.getString(_pendingInviteKey);
@@ -342,7 +371,7 @@ class SyncService {
 
   // --- Synchronisation -------------------------------------------------------
 
-  static const _groupColumns = 'id,name,color,personal,settings,group_members(user_id,role,profiles(name))';
+  static const _groupColumns = 'id,name,color,personal,settings,group_members(user_id,role,profiles(name,email))';
 
   Future<List<Map<String, dynamic>>> _fetchGroups() async {
     final rows = await _client.from('groups').select(_groupColumns);
@@ -357,6 +386,7 @@ class SyncService {
           enumByName(Role.values, m['role']) ?? Role.member,
           isMe: m['user_id'] == uid,
           userId: m['user_id'] as String?,
+          email: ((m)['profiles'] as Map?)?['email'] as String?,
         ),
     ];
     return Group.fromRemote(

@@ -163,13 +163,17 @@ class GroupScreen extends ConsumerWidget {
                         InitialAvatar(m.name.substring(0, 1).toUpperCase(), bg: c.tile(i + 2).bg, fg: c.onSurface),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: Text.rich(TextSpan(
-                            text: m.name,
-                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                            children: [
-                              if (m.isMe) TextSpan(text: ' (vous)', style: TextStyle(fontWeight: FontWeight.w400, color: c.muted)),
-                            ],
-                          )),
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Text.rich(TextSpan(
+                              text: m.name,
+                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                              children: [
+                                if (m.isMe) TextSpan(text: ' (vous)', style: TextStyle(fontWeight: FontWeight.w400, color: c.muted)),
+                              ],
+                            )),
+                            if (m.email != null && m.email!.isNotEmpty)
+                              Text(m.email!, style: TextStyle(fontSize: 12, color: c.muted)),
+                          ]),
                         ),
                         _RoleTag(m.role),
                       ]),
@@ -194,6 +198,10 @@ class GroupScreen extends ConsumerWidget {
                   ]),
                 ),
               ),
+              if (!group.personal) ...[
+                const SizedBox(height: 28),
+                _GroupDangerZone(group: group),
+              ],
             ]),
           ),
         ),
@@ -212,7 +220,21 @@ class GroupScreen extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
             child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Créneaux du planning', style: c.heading(22)),
+              Text('Réglages du groupe', style: c.heading(22)),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.edit_outlined),
+                title: const Text('Nom du groupe'),
+                subtitle: Text(current.name),
+                onTap: () async {
+                  final name = await askText(ctx, title: 'Nom du groupe', initial: current.name);
+                  if (name != null && name.isNotEmpty) {
+                    ref.read(appStoreProvider.notifier).renameGroup(current.id, name);
+                  }
+                },
+              ),
+              const Divider(height: 24),
+              const Text('Créneaux du planning', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
               const SizedBox(height: 4),
               Text('Les repas à planifier chaque jour.', style: TextStyle(color: c.muted)),
               const SizedBox(height: 8),
@@ -305,5 +327,83 @@ class _GroupRow extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Quitter le groupe ; le supprimer pour tout le monde si l'on en est admin.
+class _GroupDangerZone extends ConsumerWidget {
+  const _GroupDangerZone({required this.group});
+
+  final Group group;
+
+  Future<bool> _confirm(BuildContext context, {required String title, required String body, required String action}) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: Text(body),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(action)),
+        ],
+      ),
+    );
+    return ok == true;
+  }
+
+  void _result(ScaffoldMessengerState messenger, bool ok, String done) {
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Text(ok ? done : 'Action impossible pour l’instant (hors ligne, ou droits insuffisants).'),
+      ));
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.c;
+    final sync = ref.read(syncServiceProvider);
+    final messenger = ScaffoldMessenger.of(context);
+    final isAdmin = group.members.isEmpty || group.members.any((m) => m.isMe && m.role == Role.admin);
+    return Column(children: [
+      SizedBox(
+        width: double.infinity,
+        height: 48,
+        child: OutlinedButton(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: c.onSurface,
+            side: BorderSide(color: c.outline),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+          onPressed: () async {
+            final ok = await _confirm(
+              context,
+              title: 'Quitter « ${group.name} » ?',
+              body: 'Vous ne verrez plus ses repas ni ses courses. Les autres membres les gardent.',
+              action: 'Quitter',
+            );
+            if (!ok) return;
+            _result(messenger, await sync.leaveGroup(group.id), 'Vous avez quitté le groupe.');
+          },
+          child: const Text('Quitter le groupe', style: TextStyle(fontWeight: FontWeight.w600)),
+        ),
+      ),
+      if (isAdmin)
+        TextButton(
+          style: TextButton.styleFrom(foregroundColor: c.danger, minimumSize: const Size.fromHeight(48)),
+          onPressed: () async {
+            final ok = await _confirm(
+              context,
+              title: 'Supprimer « ${group.name} » ?',
+              body: 'Le groupe, ses repas, ses recettes et ses courses seront supprimés pour tous ses membres. Cette action est définitive.',
+              action: 'Supprimer',
+            );
+            if (!ok) return;
+            _result(messenger, await sync.deleteGroup(group.id), 'Groupe supprimé.');
+          },
+          child: const Text('Supprimer le groupe', style: TextStyle(fontWeight: FontWeight.w600)),
+        ),
+      const SizedBox(height: 16),
+    ]);
   }
 }

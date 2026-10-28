@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme.dart';
 import '../../data/app_store.dart';
 import '../../shared/widgets.dart';
+import '../planner/entry_actions.dart';
 
 /// Largeurs de rupture (spec §6.3).
 abstract final class Breakpoints {
@@ -56,14 +57,25 @@ class ShellScaffold extends ConsumerWidget {
           minWidth: 88,
           leading: Padding(
             padding: const EdgeInsets.only(top: 20, bottom: 12),
-            child: Container(
-              width: 48,
-              height: 48,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(color: Color(group.color), borderRadius: BorderRadius.circular(14)),
-              child: Text(
-                group.initial,
-                style: c.heading(22, color: const Color(0xFF14161B)),
+            child: Semantics(
+              button: true,
+              label: 'Changer de groupe ou en rejoindre un',
+              child: Tooltip(
+                message: 'Mes groupes',
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: () => showGroupSwitcher(context, ref),
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(color: Color(group.color), borderRadius: BorderRadius.circular(14)),
+                    child: Text(
+                      group.initial,
+                      style: c.heading(22, color: const Color(0xFF14161B)),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),

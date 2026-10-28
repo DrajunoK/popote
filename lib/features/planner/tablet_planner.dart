@@ -211,13 +211,13 @@ class _SlotCell extends ConsumerWidget {
         child: Padding(
           padding: const EdgeInsets.all(10),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Container(
-              height: 56,
-              decoration: BoxDecoration(
-                color: (recipe == null ? Tone(c.surfaceVariant, c.muted) : c.slotTone(slot)).bg,
-                borderRadius: BorderRadius.circular(10),
+            if (recipe != null)
+              RecipeVisual(recipe: recipe, tone: c.slotTone(slot), height: 56, radius: 10, emojiSize: 28)
+            else
+              Container(
+                height: 56,
+                decoration: BoxDecoration(color: c.surfaceVariant, borderRadius: BorderRadius.circular(10)),
               ),
-            ),
             const SizedBox(height: 6),
             Text(title, maxLines: 3, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, height: 1.3)),
             const SizedBox(height: 6),

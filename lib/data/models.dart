@@ -440,7 +440,7 @@ class ShoppingMeta {
 // ---------------------------------------------------------------------------
 
 class Member {
-  const Member(this.name, this.role, {this.isMe = false, this.userId});
+  const Member(this.name, this.role, {this.isMe = false, this.userId, this.email});
 
   final String name;
   final Role role;
@@ -448,14 +448,16 @@ class Member {
 
   /// Identifiant du compte (Supabase) ; absent tant que le groupe n'est pas synchronisé.
   final String? userId;
+  final String? email;
 
-  Map<String, dynamic> toJson() => {'n': name, 'r': role.name, 'me': isMe, 'u': userId};
+  Map<String, dynamic> toJson() => {'n': name, 'r': role.name, 'me': isMe, 'u': userId, 'e': email};
 
   factory Member.fromJson(Map<String, dynamic> j) => Member(
         j['n'] as String,
         enumByName(Role.values, j['r']) ?? Role.member,
         isMe: j['me'] as bool? ?? false,
         userId: j['u'] as String?,
+        email: j['e'] as String?,
       );
 }
 
