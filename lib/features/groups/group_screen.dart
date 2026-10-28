@@ -93,7 +93,7 @@ class GroupScreen extends ConsumerWidget {
                           shape: const StadiumBorder(),
                           child: InkWell(
                             customBorder: const StadiumBorder(),
-                            onTap: () => Share.share('Rejoins « ${group.name} » sur Popote : $link'),
+                            onTap: () => SharePlus.instance.share(ShareParams(text: 'Rejoins « ${group.name} » sur Popote : $link')),
                             child: SizedBox(
                               height: 44,
                               child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [

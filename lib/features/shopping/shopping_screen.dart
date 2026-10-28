@@ -95,7 +95,7 @@ class _ShoppingScreenState extends ConsumerState<ShoppingScreen> {
                       label: 'Partager la liste',
                       onTap: () {
                         if (items.isEmpty) return;
-                        Share.share(_asText(group, items));
+                        SharePlus.instance.share(ShareParams(text: _asText(group, items)));
                       },
                     ),
                   ]),
