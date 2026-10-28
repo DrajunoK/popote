@@ -1,6 +1,11 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../core/theme.dart';
 import '../../data/app_store.dart';
@@ -55,6 +60,7 @@ class _RecipeEditorScreenState extends ConsumerState<RecipeEditorScreen> {
   bool _shared = true;
   bool _proteinTouched = false;
   bool _baseTouched = false;
+  String? _photoPath;
 
   @override
   void initState() {
@@ -73,6 +79,7 @@ class _RecipeEditorScreenState extends ConsumerState<RecipeEditorScreen> {
       _season = existing.season;
       _kids = existing.kidFriendly;
       _shared = existing.shared;
+      _photoPath = existing.photoPath;
       _proteinTouched = _baseTouched = true;
       _steps.text = existing.steps.join('\n');
       for (final i in existing.ingredients) {
@@ -142,9 +149,20 @@ class _RecipeEditorScreenState extends ConsumerState<RecipeEditorScreen> {
       season: _season,
       kidFriendly: _kids,
       shared: _shared,
+      photoPath: _photoPath,
     );
     ref.read(appStoreProvider.notifier).upsertRecipe(recipe);
     context.pop();
+  }
+
+  /// Copie la photo choisie dans le dossier de l'appli : le fichier du sélecteur est temporaire.
+  Future<void> _pickPhoto(ImageSource source) async {
+    final picked = await ImagePicker().pickImage(source: source, maxWidth: 1280, imageQuality: 82);
+    if (picked == null) return;
+    final dir = await getApplicationDocumentsDirectory();
+    final dest = '${dir.path}/recipe_${_id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    await File(picked.path).copy(dest);
+    if (mounted) setState(() => _photoPath = dest);
   }
 
   Future<void> _delete() async {
@@ -186,6 +204,15 @@ class _RecipeEditorScreenState extends ConsumerState<RecipeEditorScreen> {
               Expanded(
                 child: ListView(padding: const EdgeInsets.fromLTRB(20, 8, 20, 24), children: [
                   _field(_title, 'Nom du repas', hint: 'Ex. Pizza maison', big: true),
+                  if (!kIsWeb) ...[
+                    const SizedBox(height: 12),
+                    _PhotoField(
+                      path: _photoPath,
+                      onCamera: () => _pickPhoto(ImageSource.camera),
+                      onGallery: () => _pickPhoto(ImageSource.gallery),
+                      onRemove: () => setState(() => _photoPath = null),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   AppCard(
                     padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
@@ -444,4 +471,41 @@ class _ChipGroup<T> extends StatelessWidget {
           ]),
         ]),
       );
+}
+
+class _PhotoField extends StatelessWidget {
+  const _PhotoField({required this.path, required this.onCamera, required this.onGallery, required this.onRemove});
+
+  final String? path;
+  final VoidCallback onCamera;
+  final VoidCallback onGallery;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return AppCard(
+      padding: const EdgeInsets.all(12),
+      child: Row(children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: SizedBox(
+            width: 64,
+            height: 64,
+            child: path == null
+                ? Container(color: c.surfaceVariant, child: Icon(Icons.photo_camera_outlined, color: c.muted))
+                : Image.file(File(path!), fit: BoxFit.cover),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Wrap(spacing: 8, runSpacing: 4, children: [
+            TextButton.icon(onPressed: onCamera, icon: const Icon(Icons.photo_camera_outlined, size: 18), label: const Text('Photo')),
+            TextButton.icon(onPressed: onGallery, icon: const Icon(Icons.photo_library_outlined, size: 18), label: const Text('Galerie')),
+            if (path != null) TextButton(onPressed: onRemove, child: const Text('Retirer')),
+          ]),
+        ),
+      ]),
+    );
+  }
 }

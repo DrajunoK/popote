@@ -5,6 +5,7 @@ import '../core/format.dart';
 import '../core/theme.dart';
 import '../data/app_store.dart';
 import '../data/models.dart';
+import 'recipe_visual.dart';
 import 'widgets.dart';
 
 /// Choix de l'utilisateur dans le sélecteur de repas.
@@ -170,7 +171,7 @@ class _MealRow extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(8),
           child: Row(children: [
-            MealTile(tone: tone, size: 52),
+            RecipeVisual(recipe: recipe, tone: tone, size: 52),
             const SizedBox(width: 12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

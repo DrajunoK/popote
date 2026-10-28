@@ -6,6 +6,7 @@ import '../../core/format.dart';
 import '../../core/theme.dart';
 import '../../data/app_store.dart';
 import '../../data/models.dart';
+import '../../shared/recipe_visual.dart';
 import '../../shared/widgets.dart';
 
 const _filters = ['Tous', 'Favoris', 'Rapide', 'Végétarien', 'Enfants'];
@@ -134,11 +135,10 @@ class _RecipeCard extends ConsumerWidget {
       child: InkWell(
         onTap: () => context.push('/recipe/${recipe.id}'),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Container(
+          SizedBox(
             height: 112,
-            color: tone.bg,
             child: Stack(children: [
-              Center(child: Icon(Icons.restaurant_menu, size: 30, color: tone.fg)),
+              Positioned.fill(child: RecipeVisual(recipe: recipe, tone: tone, radius: 0, emojiSize: 44)),
               Positioned(
                 top: 8,
                 right: 8,

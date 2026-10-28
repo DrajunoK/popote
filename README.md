@@ -66,3 +66,17 @@ lib/
   features/   auth, shell, planner, recipes, shopping, groups, profile
 test/         tests unitaires de la logique métier
 ```
+
+## Photos des recettes
+
+Les repas affichent un emoji déduit du titre (`lib/domain/recipe_emoji.dart`) tant qu'aucune photo n'est ajoutée.
+Les clés iOS suivantes sont déjà dans `ios/Runner/Info.plist` :
+
+```xml
+<key>NSPhotoLibraryUsageDescription</key>
+<string>Choisir une photo pour vos recettes.</string>
+<key>NSCameraUsageDescription</key>
+<string>Prendre une photo de vos plats.</string>
+```
+
+Android n'a besoin d'aucune permission pour `image_picker` (sélecteur système). La photo n'est pas disponible sur le web.

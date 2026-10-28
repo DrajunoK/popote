@@ -177,6 +177,7 @@ class Recipe {
     this.shared = true,
     this.notes,
     this.effortOverride,
+    this.photoPath,
   });
 
   final String id;
@@ -198,6 +199,9 @@ class Recipe {
   final bool shared;
   final String? notes;
   final Effort? effortOverride;
+
+  /// Photo choisie par l'utilisateur (fichier local) ; sinon on affiche un emoji.
+  final String? photoPath;
 
   /// F-REC-03 : un repas « simple » n'a que un titre.
   bool get isSimple => ingredients.isEmpty;
@@ -233,6 +237,7 @@ class Recipe {
         'shared': shared,
         'notes': notes,
         'effort': effortOverride?.name,
+        'photo': photoPath,
       };
 
   factory Recipe.fromJson(Map<String, dynamic> j) => Recipe(
@@ -253,6 +258,7 @@ class Recipe {
         shared: j['shared'] as bool? ?? true,
         notes: j['notes'] as String?,
         effortOverride: enumByName(Effort.values, j['effort']),
+        photoPath: j['photo'] as String?,
       );
 }
 

@@ -7,6 +7,7 @@ import '../../core/theme.dart';
 import '../../data/app_store.dart';
 import '../../data/models.dart';
 import '../../domain/shopping_generator.dart';
+import '../../shared/recipe_visual.dart';
 import '../../shared/widgets.dart';
 
 /// Fiche recette : temps, portions (recalcul des quantités), ingrédients / étapes, planifier (F-REC-02, 07).
@@ -85,11 +86,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                     RoundIconButton(icon: Icons.edit_outlined, label: 'Modifier', onTap: () => context.push('/recipe/${recipe.id}/edit')),
                   ]),
                   const SizedBox(height: 16),
-                  Container(
-                    height: 180,
-                    decoration: BoxDecoration(color: c.tile(0).bg, borderRadius: BorderRadius.circular(24)),
-                    child: Icon(Icons.restaurant_menu, size: 48, color: c.tile(0).fg),
-                  ),
+                  RecipeVisual(recipe: recipe, tone: c.tile(0), height: 180, radius: 24, emojiSize: 72),
                   const SizedBox(height: 16),
                   Text(recipe.title, style: c.heading(30, letterSpacing: -0.3)),
                   const SizedBox(height: 8),

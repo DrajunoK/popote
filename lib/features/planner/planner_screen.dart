@@ -6,6 +6,7 @@ import '../../core/format.dart';
 import '../../core/theme.dart';
 import '../../data/app_store.dart';
 import '../../data/models.dart';
+import '../../shared/recipe_visual.dart';
 import '../../shared/widgets.dart';
 import '../shell/shell_scaffold.dart';
 import 'entry_actions.dart';
@@ -415,10 +416,10 @@ class _SlotRow extends ConsumerWidget {
             border: showDivider ? Border(bottom: BorderSide(color: c.surfaceVariant)) : null,
           ),
           child: Row(children: [
-            MealTile(
-              tone: isNote ? Tone(c.surfaceVariant, c.muted) : tone,
-              icon: isNote ? Icons.inventory_2_outlined : Icons.restaurant,
-            ),
+            if (recipe case final r?)
+              RecipeVisual(recipe: r, tone: tone, size: 48)
+            else
+              MealTile(tone: Tone(c.surfaceVariant, c.muted), icon: Icons.inventory_2_outlined),
             const SizedBox(width: 12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

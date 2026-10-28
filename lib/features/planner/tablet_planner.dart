@@ -6,6 +6,7 @@ import '../../core/format.dart';
 import '../../core/theme.dart';
 import '../../data/app_store.dart';
 import '../../data/models.dart';
+import '../../shared/recipe_visual.dart';
 import '../../shared/widgets.dart';
 import 'entry_actions.dart';
 import 'planner_screen.dart';
@@ -314,7 +315,7 @@ class _LibraryRow extends StatelessWidget {
       child: Row(children: [
         Icon(Icons.drag_indicator, size: 16, color: c.muted),
         const SizedBox(width: 10),
-        MealTile(tone: tone, size: 44, icon: null, radius: 10),
+        RecipeVisual(recipe: recipe, tone: tone, size: 44, radius: 10),
         const SizedBox(width: 10),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
