@@ -57,8 +57,8 @@ class ProfileScreen extends ConsumerWidget {
               Container(
                 decoration: BoxDecoration(color: c.surface, border: Border.all(color: c.outline), borderRadius: BorderRadius.circular(16)),
                 child: Column(children: [
-                  _InfoRow(label: 'Langue', value: 'Français', divider: true),
-                  _InfoRow(label: 'Taille du texte', value: 'Système', divider: true),
+                  const _InfoRow(label: 'Langue', value: 'Français', divider: true),
+                  const _InfoRow(label: 'Taille du texte', value: 'Système', divider: true),
                   SwitchListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14),
                     value: data.remindSunday,

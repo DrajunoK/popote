@@ -8,7 +8,6 @@ import '../../data/app_store.dart';
 import '../../data/models.dart';
 import '../../domain/shopping_generator.dart';
 import '../../shared/widgets.dart';
-import '../planner/entry_actions.dart';
 
 /// Fiche recette : temps, portions (recalcul des quantités), ingrédients / étapes, planifier (F-REC-02, 07).
 class RecipeDetailScreen extends ConsumerStatefulWidget {

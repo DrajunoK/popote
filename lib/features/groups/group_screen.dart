@@ -203,7 +203,7 @@ class GroupScreen extends ConsumerWidget {
     if (name == null || name.isEmpty || !context.mounted) return;
     final c = context.c;
     final colors = [c.tertiary, c.slotLunch, c.primary, const Color(0xFF8CC0E8)];
-    final colorValue = colors[ref.read(appStoreProvider).groups.length % colors.length].value;
+    final colorValue = colors[ref.read(appStoreProvider).groups.length % colors.length].toARGB32();
     ref.read(appStoreProvider.notifier).createGroup(name, PeriodType.week, colorValue);
   }
 }

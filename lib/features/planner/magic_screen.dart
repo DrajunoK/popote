@@ -123,12 +123,13 @@ class _MagicScreenState extends ConsumerState<MagicScreen> {
     store.replaceEntries(removeIds: touched, add: added);
     store.updateRules(groupId, _rules);
 
-    // Annulable pendant 10 s.
+    // Annulable pendant 6 s (persist: false, sinon une SnackBar avec action ne disparaît jamais).
     final messenger = ScaffoldMessenger.of(context);
     messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(
-        duration: const Duration(seconds: 10),
+        duration: const Duration(seconds: 6),
+        persist: false,
         content: Text('Semaine planifiée (${added.length} repas)'),
         action: SnackBarAction(
           label: 'Annuler',

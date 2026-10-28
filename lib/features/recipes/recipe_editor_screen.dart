@@ -357,7 +357,7 @@ class _RecipeEditorScreenState extends ConsumerState<RecipeEditorScreen> {
         Expanded(
           flex: 3,
           child: DropdownButtonFormField<String>(
-            value: row.unit,
+            initialValue: row.unit,
             isExpanded: true,
             decoration: _decoration(''),
             items: [for (final u in _units) DropdownMenuItem(value: u, child: Text(u.isEmpty ? 'au goût' : u, overflow: TextOverflow.ellipsis))],

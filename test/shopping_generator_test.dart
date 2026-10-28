@@ -85,7 +85,7 @@ void main() {
   test('la régénération conserve les ajouts manuels et les cases cochées', () {
     final recipes = {'a': recipe('a', 4, [flour])};
     final first = gen([entry('1', 'a')], recipes);
-    final lessive = const ShoppingItem(
+    const lessive = ShoppingItem(
       id: 'm1',
       groupId: 'g',
       label: 'Lessive',

@@ -68,7 +68,7 @@ MagicResult planMagic({
     }
     if (chosen == null) continue;
     if (found > 1) {
-      final msg = 'Pas assez de recettes pour respecter toutes les règles — certaines ont été assouplies.';
+      const msg = 'Pas assez de recettes pour respecter toutes les règles — certaines ont été assouplies.';
       if (!warnings.contains(msg)) warnings.add(msg);
     }
     placed[slot.ord] = chosen;
