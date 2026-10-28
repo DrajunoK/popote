@@ -7,15 +7,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'core/router.dart';
 import 'core/theme.dart';
 import 'data/app_store.dart';
+import 'data/auth_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('fr');
   final prefs = await SharedPreferences.getInstance();
-  runApp(ProviderScope(
-    overrides: [prefsProvider.overrideWithValue(prefs)],
-    child: const PopoteApp(),
-  ));
+  await AuthService.init();
+  final container = ProviderContainer(overrides: [prefsProvider.overrideWithValue(prefs)]);
+  container.read(authServiceProvider).listen();
+  runApp(UncontrolledProviderScope(container: container, child: const PopoteApp()));
 }
 
 class PopoteApp extends ConsumerWidget {

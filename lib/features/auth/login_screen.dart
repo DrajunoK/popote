@@ -2,22 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme.dart';
-import '../../data/app_store.dart';
-import '../../data/models.dart';
+import '../../data/auth_service.dart';
 
 /// Connexion Google (F-AUTH-01).
 ///
-/// TODO(backend) : remplacer par Supabase Auth + Google Sign-In (Credential Manager).
-/// Tant que le backend n'est pas branché, la connexion crée un profil local.
+/// Passe par Supabase Auth quand `SUPABASE_URL` et `SUPABASE_ANON_KEY` sont fournis,
+/// sinon crée un profil local de démonstration.
 class LoginScreen extends ConsumerWidget {
   const LoginScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
-    void signIn() => ref
-        .read(appStoreProvider.notifier)
-        .signIn(const UserProfile(name: 'Alex Martin', email: 'alex@example.com'));
+    void signIn() => ref.read(authServiceProvider).signInWithGoogle();
 
     return Scaffold(
       body: SafeArea(

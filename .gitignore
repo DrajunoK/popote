@@ -29,3 +29,6 @@ ios/**/GeneratedPluginRegistrant.*
 
 # Sandbox
 .sbxw-artifacts/
+
+# Clés Supabase locales
+env.json

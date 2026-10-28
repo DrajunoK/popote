@@ -80,3 +80,20 @@ Les clés iOS suivantes sont déjà dans `ios/Runner/Info.plist` :
 ```
 
 Android n'a besoin d'aucune permission pour `image_picker` (sélecteur système). La photo n'est pas disponible sur le web.
+
+## Connexion Google (Supabase)
+
+Sans configuration, la connexion crée un profil local de démonstration. Pour la vraie connexion :
+
+1. supabase.com > New project (plan gratuit).
+2. Authentication > Sign In / Providers > Google : activez-le, collez le Client ID et le Client Secret.
+3. Authentication > URL Configuration > Redirect URLs : ajoutez `app.popote://login-callback` (et `http://localhost:*` pour le web en dev).
+4. console.cloud.google.com > APIs & Services > Credentials > Create OAuth client ID > type **Web application**. Dans « Authorized redirect URIs », collez l'URL de callback affichée par Supabase (`https://<ref>.supabase.co/auth/v1/callback`).
+5. Lancez avec vos clés (Project Settings > API) :
+
+```
+cp env.example.json env.json   # puis remplissez vos valeurs (env.json est ignoré par git)
+flutter run --dart-define-from-file=env.json
+```
+
+Le schéma `app.popote://login-callback` est déjà déclaré dans `AndroidManifest.xml` et `Info.plist`.

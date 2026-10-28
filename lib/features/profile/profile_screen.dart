@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme.dart';
 import '../../data/app_store.dart';
+import '../../data/auth_service.dart';
 import '../../shared/widgets.dart';
 
 /// Profil : apparence (4 thèmes, aperçu immédiat), réglages, compte (F-PRF-01…06).
@@ -78,7 +79,7 @@ class ProfileScreen extends ConsumerWidget {
                     side: BorderSide(color: c.outline),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
-                  onPressed: store.signOut,
+                  onPressed: () => ref.read(authServiceProvider).signOut(),
                   child: const Text('Se déconnecter', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                 ),
               ),

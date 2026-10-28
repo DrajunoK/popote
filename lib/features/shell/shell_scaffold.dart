@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme.dart';
 import '../../data/app_store.dart';
+import '../../shared/widgets.dart';
 
 /// Largeurs de rupture (spec §6.3).
 abstract final class Breakpoints {
@@ -45,6 +46,7 @@ class ShellScaffold extends ConsumerWidget {
 
     final c = context.c;
     final group = ref.watch(currentGroupProvider);
+    final user = ref.watch(appStoreProvider.select((d) => d.user));
     return Scaffold(
       body: Row(children: [
         NavigationRail(
@@ -62,6 +64,26 @@ class ShellScaffold extends ConsumerWidget {
               child: Text(
                 group.initial,
                 style: c.heading(22, color: const Color(0xFF14161B)),
+              ),
+            ),
+          ),
+          trailing: Expanded(
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 20),
+                child: Semantics(
+                  label: 'Mon profil',
+                  button: true,
+                  child: Tooltip(
+                    message: user?.name ?? 'Mon profil',
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: () => context.push('/profile'),
+                      child: InitialAvatar(user?.initial ?? '?', bg: c.surfaceVariant, fg: c.onSurface, size: 44),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
