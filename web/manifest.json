@@ -1,13 +1,12 @@
 {
-    "name": "popote",
-    "short_name": "popote",
+    "name": "Popote",
+    "short_name": "Popote",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
-    "prefer_related_applications": false,
+    "background_color": "#14161B",
+    "theme_color": "#14161B",
+    "description": "Planifiez les repas à plusieurs, et la liste de courses se fait toute seule.",
+        "prefer_related_applications": false,
     "icons": [
         {
             "src": "icons/Icon-192.png",

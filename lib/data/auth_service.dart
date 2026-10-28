@@ -65,6 +65,25 @@ class AuthService {
     );
   }
 
+  /// Supprime le compte côté serveur (groupes quittés, profil effacé), puis les données locales.
+  /// Renvoie `false` si le serveur n'a pas pu le faire : rien n'est alors effacé.
+  Future<bool> deleteAccount() async {
+    if (configured && Supabase.instance.client.auth.currentUser != null) {
+      try {
+        await Supabase.instance.client.rpc('delete_account');
+      } catch (_) {
+        return false;
+      }
+      try {
+        await Supabase.instance.client.auth.signOut();
+      } catch (_) {
+        // Le compte n'existe déjà plus : la déconnexion peut échouer sans conséquence.
+      }
+    }
+    _store.deleteAccount();
+    return true;
+  }
+
   Future<void> signOut() async {
     if (configured) await Supabase.instance.client.auth.signOut();
     _store.signOut();

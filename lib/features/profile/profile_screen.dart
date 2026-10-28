@@ -104,7 +104,7 @@ class ProfileScreen extends ConsumerWidget {
               const SizedBox(height: 8),
               TextButton(
                 style: TextButton.styleFrom(foregroundColor: c.danger, minimumSize: const Size.fromHeight(48)),
-                onPressed: () => _confirmDelete(context, store),
+                onPressed: () => _confirmDelete(context, ref),
                 child: const Text('Supprimer mon compte', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
               ),
             ]),
@@ -114,19 +114,25 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context, AppStore store) async {
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Supprimer votre compte ?'),
-        content: const Text('Vos recettes, plannings et listes seront définitivement supprimés.'),
+        content: const Text(
+            'Votre compte est supprimé et vous quittez tous vos groupes. Les espaces personnels sont effacés ; '
+            'les groupes partagés restent aux autres membres. Cette action est définitive.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
           FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Supprimer')),
         ],
       ),
     );
-    if (ok == true) store.deleteAccount();
+    if (ok != true) return;
+    if (!await ref.read(authServiceProvider).deleteAccount()) {
+      messenger.showSnackBar(const SnackBar(content: Text('Suppression impossible pour l’instant. Vérifiez votre connexion.')));
+    }
   }
 }
 
