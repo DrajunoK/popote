@@ -2,6 +2,8 @@
 /// et groupes par défaut (F-GRP-05).
 library;
 
+import 'dart:math';
+
 import 'models.dart';
 
 RecipeIngredient _i(String name, double qty, String unit, Aisle aisle) => RecipeIngredient(name, qty, unit, aisle);
@@ -480,23 +482,37 @@ List<Recipe> starterRecipes() => [
           ]),
     ];
 
+/// Identifiant aléatoire pour un groupe : il est partagé entre comptes, il doit donc être unique.
+String randomId() {
+  final r = Random.secure();
+  return List.generate(12, (_) => r.nextInt(36).toRadixString(36)).join();
+}
+
 AppData seedData() {
-  const me = Member('Alex', Role.admin, isMe: true);
+  const me = Member('Moi', Role.admin, isMe: true);
+  final familyId = 'g_${randomId()}';
+  final personalId = 'g_${randomId()}';
+  // Les recettes de démarrage appartiennent au groupe Famille ; leur id est propre à ce groupe
+  // pour ne pas entrer en collision avec celles d'un autre compte rejoint plus tard.
+  final recipes = [for (final r in starterRecipes()) r.relocated(id: '${r.id}@$familyId', groupId: familyId)];
+  String idOf(String starter) => '$starter@$familyId';
   return AppData(
     user: null,
-    recipes: starterRecipes(),
-    favorites: {'r_lasagnes', 'r_gratin_dauphinois', 'r_tartiflette', 'r_bolognaise', 'r_quiche'},
-    groups: const [
-      Group(id: 'g_famille', name: 'Famille', color: 0xFF8DD3A8, period: PeriodType.week, members: [me]),
+    recipes: recipes,
+    favorites: {
+      for (final s in ['r_lasagnes', 'r_gratin_dauphinois', 'r_tartiflette', 'r_bolognaise', 'r_quiche']) idOf(s),
+    },
+    groups: [
+      Group(id: familyId, name: 'Famille', color: 0xFF8DD3A8, period: PeriodType.week, members: const [me]),
       Group(
-          id: 'g_perso',
+          id: personalId,
           name: 'Perso',
           color: 0xFFF2C35B,
           period: PeriodType.week,
-          members: [me],
+          members: const [me],
           personal: true),
     ],
-    currentGroupId: 'g_famille',
+    currentGroupId: familyId,
     entries: const [],
     shopping: const [],
     lists: const {},

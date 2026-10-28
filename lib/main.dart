@@ -8,6 +8,7 @@ import 'core/router.dart';
 import 'core/theme.dart';
 import 'data/app_store.dart';
 import 'data/auth_service.dart';
+import 'data/sync_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,6 +16,7 @@ Future<void> main() async {
   final prefs = await SharedPreferences.getInstance();
   await AuthService.init();
   final container = ProviderContainer(overrides: [prefsProvider.overrideWithValue(prefs)]);
+  container.read(syncServiceProvider);
   container.read(authServiceProvider).listen();
   runApp(UncontrolledProviderScope(container: container, child: const PopoteApp()));
 }

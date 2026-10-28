@@ -178,6 +178,7 @@ class Recipe {
     this.notes,
     this.effortOverride,
     this.photoPath,
+    this.groupId,
   });
 
   final String id;
@@ -202,6 +203,32 @@ class Recipe {
 
   /// Photo choisie par l'utilisateur (fichier local) ; sinon on affiche un emoji.
   final String? photoPath;
+
+  /// Groupe propriétaire : c'est lui qui voit la recette et la synchronise.
+  final String? groupId;
+
+  /// Copie avec un autre identifiant / groupe (recettes de démarrage propres à chaque groupe).
+  Recipe relocated({required String id, required String groupId}) => Recipe(
+        id: id,
+        title: title,
+        servings: servings,
+        prepMin: prepMin,
+        cookMin: cookMin,
+        ingredients: ingredients,
+        steps: steps,
+        tags: tags,
+        protein: protein,
+        base: base,
+        dish: dish,
+        season: season,
+        cuisine: cuisine,
+        kidFriendly: kidFriendly,
+        shared: shared,
+        notes: notes,
+        effortOverride: effortOverride,
+        photoPath: photoPath,
+        groupId: groupId,
+      );
 
   /// F-REC-03 : un repas « simple » n'a que un titre.
   bool get isSimple => ingredients.isEmpty;
@@ -238,6 +265,7 @@ class Recipe {
         'notes': notes,
         'effort': effortOverride?.name,
         'photo': photoPath,
+        'gid': groupId,
       };
 
   factory Recipe.fromJson(Map<String, dynamic> j) => Recipe(
@@ -259,6 +287,7 @@ class Recipe {
         notes: j['notes'] as String?,
         effortOverride: enumByName(Effort.values, j['effort']),
         photoPath: j['photo'] as String?,
+        groupId: j['gid'] as String?,
       );
 }
 
@@ -411,16 +440,23 @@ class ShoppingMeta {
 // ---------------------------------------------------------------------------
 
 class Member {
-  const Member(this.name, this.role, {this.isMe = false});
+  const Member(this.name, this.role, {this.isMe = false, this.userId});
 
   final String name;
   final Role role;
   final bool isMe;
 
-  Map<String, dynamic> toJson() => {'n': name, 'r': role.name, 'me': isMe};
+  /// Identifiant du compte (Supabase) ; absent tant que le groupe n'est pas synchronisé.
+  final String? userId;
 
-  factory Member.fromJson(Map<String, dynamic> j) =>
-      Member(j['n'] as String, enumByName(Role.values, j['r']) ?? Role.member, isMe: j['me'] as bool? ?? false);
+  Map<String, dynamic> toJson() => {'n': name, 'r': role.name, 'me': isMe, 'u': userId};
+
+  factory Member.fromJson(Map<String, dynamic> j) => Member(
+        j['n'] as String,
+        enumByName(Role.values, j['r']) ?? Role.member,
+        isMe: j['me'] as bool? ?? false,
+        userId: j['u'] as String?,
+      );
 }
 
 /// Règles du bouton magique (§3.8), configurables par groupe.
@@ -534,12 +570,20 @@ class Group {
   String get initial => name.isEmpty ? '?' : name.substring(0, 1).toUpperCase();
   int get size => members.length;
 
-  Group copyWith({PlannerRules? rules, List<SlotKind>? slots, bool? archived}) => Group(
+  Group copyWith({
+    String? name,
+    int? color,
+    List<Member>? members,
+    PlannerRules? rules,
+    List<SlotKind>? slots,
+    bool? archived,
+  }) =>
+      Group(
         id: id,
-        name: name,
-        color: color,
+        name: name ?? this.name,
+        color: color ?? this.color,
         period: period,
-        members: members,
+        members: members ?? this.members,
         personal: personal,
         startDate: startDate,
         endDate: endDate,
@@ -561,6 +605,44 @@ class Group {
         'rules': rules.toJson(),
         'archived': archived,
       };
+
+  /// Réglages synchronisés (colonne `groups.settings`) : tout sauf identité et membres.
+  Map<String, dynamic> settingsJson() => {
+        'period': period.name,
+        'start': startDate == null ? null : dayKey(startDate!),
+        'end': endDate == null ? null : dayKey(endDate!),
+        'slots': slots.map((s) => s.name).toList(),
+        'rules': rules.toJson(),
+        'archived': archived,
+      };
+
+  /// Reconstruit un groupe depuis une ligne distante ; [members] vient de `group_members`.
+  factory Group.fromRemote({
+    required String id,
+    required String name,
+    required int color,
+    required bool personal,
+    required Map<String, dynamic> settings,
+    required List<Member> members,
+  }) =>
+      Group(
+        id: id,
+        name: name,
+        color: color,
+        period: enumByName(PeriodType.values, settings['period']) ?? PeriodType.week,
+        members: members,
+        personal: personal,
+        startDate: settings['start'] == null ? null : parseDay(settings['start'] as String),
+        endDate: settings['end'] == null ? null : parseDay(settings['end'] as String),
+        slots: ((settings['slots'] as List?) ?? const ['lunch', 'dinner'])
+            .map((s) => enumByName(SlotKind.values, s))
+            .whereType<SlotKind>()
+            .toList(),
+        rules: settings['rules'] == null
+            ? const PlannerRules()
+            : PlannerRules.fromJson(settings['rules'] as Map<String, dynamic>),
+        archived: settings['archived'] as bool? ?? false,
+      );
 
   factory Group.fromJson(Map<String, dynamic> j) => Group(
         id: j['id'] as String,

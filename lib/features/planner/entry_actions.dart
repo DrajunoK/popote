@@ -6,6 +6,7 @@ import '../../core/theme.dart';
 import '../../data/app_store.dart';
 import '../../data/models.dart';
 import '../../shared/meal_picker.dart';
+import '../groups/join_group.dart';
 
 /// Charge utile d'un glisser-déposer depuis la bibliothèque (tablette).
 class RecipeDrag {
@@ -182,6 +183,14 @@ Future<void> showGroupSwitcher(BuildContext context, WidgetRef ref) {
                 Navigator.pop(sheetCtx);
               },
             ),
+          ListTile(
+            leading: const Icon(Icons.group_add_outlined),
+            title: const Text('Rejoindre avec un code', style: TextStyle(fontWeight: FontWeight.w600)),
+            onTap: () async {
+              Navigator.pop(sheetCtx);
+              await askAndJoinGroup(context, ref);
+            },
+          ),
         ]),
       ),
     ),

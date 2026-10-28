@@ -6,15 +6,64 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/format.dart';
 import '../../core/theme.dart';
 import '../../data/app_store.dart';
+import '../../data/auth_service.dart';
 import '../../data/models.dart';
+import '../../data/sync_service.dart';
 import '../../shared/widgets.dart';
 
 /// Groupe : invitation par lien / QR, membres et rôles, autres groupes (§3.2).
 class GroupScreen extends ConsumerWidget {
   const GroupScreen({super.key});
 
-  /// TODO(backend) : le jeton doit être émis par la table `invitations` (expiration 7 jours).
-  String _inviteLink(Group g) => 'https://popote.app/join/${g.id}';
+  Future<void> _invite(BuildContext context, WidgetRef ref, Group group) async {
+    final messenger = ScaffoldMessenger.of(context);
+    if (!AuthService.configured) {
+      messenger.showSnackBar(const SnackBar(content: Text('Les invitations demandent un compte : configurez Supabase (voir le README).')));
+      return;
+    }
+    final code = await ref.read(syncServiceProvider).createInvite(group.id);
+    if (!context.mounted) return;
+    if (code == null) {
+      messenger.showSnackBar(const SnackBar(content: Text('Impossible de créer l’invitation pour l’instant. Vérifiez votre connexion.')));
+      return;
+    }
+    final link = 'app.popote://join/$code';
+    final c = context.c;
+    await showModalBottomSheet<void>(
+      context: context,
+      constraints: const BoxConstraints(maxWidth: 480),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text('Inviter dans « ${group.name} »', style: c.heading(22)),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+              child: QrImageView(data: link, size: 180, padding: EdgeInsets.zero),
+            ),
+            const SizedBox(height: 16),
+            SelectableText(code, style: c.heading(30, letterSpacing: 4)),
+            const SizedBox(height: 4),
+            Text('Valable 7 jours. À saisir dans « J’ai un code d’invitation ».', style: TextStyle(fontSize: 13, color: c.muted)),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: FilledButton.icon(
+                onPressed: () => SharePlus.instance.share(ShareParams(
+                  text: 'Rejoins « ${group.name} » sur Popote avec le code $code (ou ce lien : $link)',
+                )),
+                icon: const Icon(Icons.ios_share, size: 18),
+                label: const Text('Partager'),
+              ),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -22,7 +71,6 @@ class GroupScreen extends ConsumerWidget {
     final data = ref.watch(appStoreProvider);
     final group = data.currentGroup;
     final others = data.groups.where((g) => g.id != group.id && !g.archived).toList();
-    final link = _inviteLink(group);
     final slotsLabel = group.slots.map((s) => s.label).join(' + ');
     final subtitle = switch (group.period) {
       PeriodType.stay when group.startDate != null && group.endDate != null =>
@@ -66,26 +114,17 @@ class GroupScreen extends ConsumerWidget {
                   decoration: BoxDecoration(color: c.inverse, borderRadius: BorderRadius.circular(20)),
                   child: Row(children: [
                     Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(color: c.isDark ? c.surface : c.onInverse, borderRadius: BorderRadius.circular(10)),
-                      child: Semantics(
-                        label: 'QR code d’invitation',
-                        child: QrImageView(
-                          data: link,
-                          size: 96,
-                          padding: EdgeInsets.zero,
-                          backgroundColor: Colors.transparent,
-                          eyeStyle: QrEyeStyle(eyeShape: QrEyeShape.square, color: c.inverse),
-                          dataModuleStyle: QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: c.inverse),
-                        ),
-                      ),
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(color: c.isDark ? c.surface : c.onInverse, borderRadius: BorderRadius.circular(16)),
+                      child: Icon(Icons.qr_code_2, size: 44, color: c.isDark ? c.onSurface : c.inverse),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text('Inviter dans le groupe', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: c.onInverse)),
                         const SizedBox(height: 4),
-                        Text('Scannez ou partagez le lien. Valable 7 jours.',
+                        Text('Un code et un QR valables 7 jours.',
                             style: TextStyle(fontSize: 13, height: 1.4, color: c.onInverse.withAlpha(200))),
                         const SizedBox(height: 10),
                         Material(
@@ -93,13 +132,13 @@ class GroupScreen extends ConsumerWidget {
                           shape: const StadiumBorder(),
                           child: InkWell(
                             customBorder: const StadiumBorder(),
-                            onTap: () => SharePlus.instance.share(ShareParams(text: 'Rejoins « ${group.name} » sur Popote : $link')),
+                            onTap: () => _invite(context, ref, group),
                             child: SizedBox(
                               height: 44,
                               child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                                 Icon(Icons.link, size: 18, color: c.isDark ? c.onSurface : c.inverse),
                                 const SizedBox(width: 8),
-                                Text('Partager le lien',
+                                Text('Créer une invitation',
                                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: c.isDark ? c.onSurface : c.inverse)),
                               ]),
                             ),

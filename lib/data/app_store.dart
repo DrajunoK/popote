@@ -7,7 +7,7 @@ import '../domain/shopping_generator.dart' as gen;
 import 'models.dart';
 import 'seed.dart';
 
-const _storageKey = 'popote.v1';
+const _storageKey = 'popote.v2';
 
 /// Surchargé dans `main()` avec l'instance initialisée.
 final prefsProvider = Provider<SharedPreferences>((ref) => throw UnimplementedError('prefsProvider'));
@@ -44,7 +44,12 @@ class AppStore extends Notifier<AppData> {
 
   void signIn(UserProfile user) => _set(state.copyWith(user: user));
 
-  void signOut() => _set(state.copyWith(user: null));
+  /// Déconnexion : les données appartiennent au compte (elles sont sur le serveur), on repart d'un
+  /// état vierge pour qu'un autre compte sur le même appareil ne les récupère pas.
+  void signOut() => _set(seedData());
+
+  /// Point d'entrée de la synchronisation : applique une transformation de l'état complet.
+  void apply(AppData Function(AppData) f) => _set(f(state));
 
   /// F-AUTH-03 : supprime le compte et toutes les données locales.
   void deleteAccount() => _set(seedData());
@@ -60,7 +65,7 @@ class AppStore extends Notifier<AppData> {
   void selectGroup(String id) => _set(state.copyWith(currentGroupId: id));
 
   String createGroup(String name, PeriodType period, int color, {DateTime? start, DateTime? end}) {
-    final id = newId();
+    final id = 'g_${randomId()}';
     final me = state.user?.name ?? 'Moi';
     final g = Group(
       id: id,
@@ -92,9 +97,13 @@ class AppStore extends Notifier<AppData> {
   }
 
   /// Crée ou remplace une recette (même `id`).
-  void upsertRecipe(Recipe r) {
+  void upsertRecipe(Recipe input) {
     final list = [...state.recipes];
-    final i = list.indexWhere((x) => x.id == r.id);
+    final i = list.indexWhere((x) => x.id == input.id);
+    // Une recette appartient à un groupe : celui d'origine, sinon le groupe courant.
+    final r = input.groupId != null
+        ? input
+        : input.relocated(id: input.id, groupId: i >= 0 ? (list[i].groupId ?? state.currentGroupId) : state.currentGroupId);
     if (i >= 0) {
       list[i] = r;
     } else {

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme.dart';
 import '../../data/auth_service.dart';
+import '../groups/join_group.dart';
 
 /// Connexion Google (F-AUTH-01).
 ///
@@ -57,9 +58,9 @@ class LoginScreen extends ConsumerWidget {
                   background: c.surface,
                   foreground: c.onSurface,
                   border: c.outlineStrong,
-                  onTap: () => _inviteInfo(context),
+                  onTap: () => _join(context, ref),
                   leading: Icon(Icons.link, size: 20, color: c.onSurface),
-                  label: 'J’ai un lien d’invitation',
+                  label: 'J’ai un code d’invitation',
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -75,10 +76,11 @@ class LoginScreen extends ConsumerWidget {
     );
   }
 
-  void _inviteInfo(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Ouvrez le lien reçu : il vous fera rejoindre le groupe (bientôt disponible).')),
-    );
+  /// Le code est gardé, puis utilisé juste après la connexion Google.
+  Future<void> _join(BuildContext context, WidgetRef ref) async {
+    if (await askAndJoinGroup(context, ref)) {
+      await ref.read(authServiceProvider).signInWithGoogle();
+    }
   }
 }
 

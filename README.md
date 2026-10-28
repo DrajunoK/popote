@@ -97,3 +97,14 @@ flutter run --dart-define-from-file=env.json
 ```
 
 Le schéma `app.popote://login-callback` est déjà déclaré dans `AndroidManifest.xml` et `Info.plist`.
+
+## Synchronisation et groupes (Supabase)
+
+1. Supabase > SQL Editor > New query : collez `supabase/migrations/0001_init.sql` puis **Run** (à faire une fois).
+2. Lancez l'appli avec `--dart-define-from-file=env.json` et connectez-vous.
+
+Fonctionnement : local-first. Les recettes, repas, courses et réglages de groupe sont envoyés au serveur
+après chaque modification et reçus en temps réel ; en cas de conflit sur un même élément, le dernier écrit gagne.
+Favoris, garde-manger, thème et photos restent propres à l'appareil.
+Invitations : « Créer une invitation » (écran Groupe) donne un code de 8 caractères valable 7 jours ;
+le destinataire le saisit dans « Rejoindre avec un code » (sélecteur de groupe) ou « J'ai un code d'invitation » (connexion).

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/app_store.dart';
+import '../data/sync_service.dart';
 import '../features/auth/login_screen.dart';
 import '../features/groups/group_screen.dart';
 import '../features/planner/magic_screen.dart';
@@ -24,6 +25,15 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/planning',
     refreshListenable: signedIn,
     redirect: (context, state) {
+      // Liens profonds : `app.popote://join/CODE` (invitation) ou `app.popote://login-callback` (retour Google).
+      final uri = state.uri;
+      if (uri.scheme == 'app.popote') {
+        if (uri.host == 'join' && uri.pathSegments.isNotEmpty) {
+          ref.read(syncServiceProvider).joinWithCode(uri.pathSegments.first);
+          return signedIn.value ? '/group' : '/login';
+        }
+        return signedIn.value ? '/planning' : '/login';
+      }
       final atLogin = state.matchedLocation == '/login';
       if (!signedIn.value) return atLogin ? null : '/login';
       return atLogin ? '/planning' : null;
