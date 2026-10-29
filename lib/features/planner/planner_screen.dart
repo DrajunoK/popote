@@ -8,7 +8,6 @@ import '../../data/app_store.dart';
 import '../../data/models.dart';
 import '../../shared/recipe_visual.dart';
 import '../../shared/widgets.dart';
-import '../shell/shell_scaffold.dart';
 import 'entry_actions.dart';
 import 'tablet_planner.dart';
 
@@ -36,8 +35,9 @@ class PlannerScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final width = MediaQuery.of(context).size.width;
     // Tablette paysage : planning + bibliothèque côte à côte (spec §6.3).
-    // La rail de navigation occupe 88 dp : on compare à la largeur utile.
-    if (width - 88 > Breakpoints.expanded) return const TabletPlanner();
+    // La rail de navigation occupe 88 dp : on compare à la largeur utile. Il faut ~1100 dp pour
+    // 7 colonnes lisibles + la bibliothèque de 340 dp ; en dessous, la vue téléphone (centrée).
+    if (width - 88 >= 1100) return const TabletPlanner();
     return const _PhonePlanner();
   }
 }
