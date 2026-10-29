@@ -54,3 +54,12 @@ Aujourd'hui l'écran est en mode **Test** : seuls les comptes listés dans « Ut
 - [ ] Exécuter `supabase/migrations/0003_delete_account.sql` : sans lui, « Supprimer mon compte » n'efface rien côté serveur.
 - [ ] Embarquer les polices dans l'appli plutôt que les charger depuis Google Fonts (confidentialité et mode hors ligne) ; sinon gardez la mention dans la politique.
 - [ ] Signature de l'appli Android (keystore) et profil de distribution iOS.
+
+
+## Domaine retenu : `popote.pomponlabs.com`
+
+- Domaine racine : `pomponlabs.com` (OVH). Domaine autorisé Google : `pomponlabs.com`, à vérifier dans Search Console.
+- Page d'accueil : `https://popote.pomponlabs.com/`
+- Politique de confidentialité : `https://popote.pomponlabs.com/privacy-policy.html`
+- Hébergement : GitHub Pages, dossier `/docs` de ce dépôt (fichier `docs/CNAME`).
+- Identifiant d'application Android et iOS : `com.pomponlabs.popote`. Le schéma de lien `app.popote://` reste inchangé.
