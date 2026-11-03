@@ -242,6 +242,7 @@ class _AisleSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
     final store = ref.read(appStoreProvider.notifier);
+    final laterFrom = ref.watch(appStoreProvider.select((d) => d.lists[d.currentGroupId]?.from));
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       InkWell(
         onTap: onToggleCollapse,
@@ -279,6 +280,7 @@ class _AisleSection extends ConsumerWidget {
                   ),
                   child: _ItemTile(
                     item: item,
+                    laterFrom: laterFrom,
                     onTap: () {
                       HapticFeedback.lightImpact();
                       store.toggleItem(item.id);
@@ -300,9 +302,12 @@ class _AisleSection extends ConsumerWidget {
 }
 
 class _ItemTile extends StatelessWidget {
-  const _ItemTile({required this.item, required this.onTap});
+  const _ItemTile({required this.item, required this.onTap, this.laterFrom});
 
   final ShoppingItem item;
+
+  /// Début de la période de la liste : sert à signaler les produits frais à acheter plus tard.
+  final DateTime? laterFrom;
   final VoidCallback onTap;
 
   @override
@@ -345,6 +350,9 @@ class _ItemTile extends StatelessWidget {
                     ),
                   ),
                   if (from.isNotEmpty) Text(from, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: c.muted)),
+                  if (laterFrom != null && item.buyLater(laterFrom!))
+                    Text('Frais : à acheter plus tard (repas le ${dayMonth(item.firstUse!)})',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: c.primary)),
                 ]),
               ),
               Text(qty, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: c.soft)),

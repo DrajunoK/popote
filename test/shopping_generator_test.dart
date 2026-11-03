@@ -102,6 +102,20 @@ void main() {
     expect(again.firstWhere((i) => i.label == 'Farine').id, first.single.id);
   });
 
+  test('signale un produit frais dont le premier repas est loin du début de la période', () {
+    const milk = RecipeIngredient('Lait', 50, 'cl', Aisle.fresh);
+    final recipes = {'a': recipe('a', 4, [milk, flour])};
+    final items = gen([entry('1', 'a', day: 27), entry('2', 'a', day: 31)], recipes);
+    final from = DateTime(2026, 10, 27);
+    // Le premier repas est le 27 : rien à reporter.
+    expect(items.every((i) => !i.buyLater(from)), isTrue);
+
+    final later = gen([entry('2', 'a', day: 31)], recipes);
+    expect(later.firstWhere((i) => i.label == 'Lait').buyLater(from), isTrue);
+    // L'épicerie se conserve : jamais signalée.
+    expect(later.firstWhere((i) => i.label == 'Farine').buyLater(from), isFalse);
+  });
+
   test('formatQty', () {
     expect(formatQty(1200, 'g'), '1,2 kg');
     expect(formatQty(400, 'ml'), '40 cl');

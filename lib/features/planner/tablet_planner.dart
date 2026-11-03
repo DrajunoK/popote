@@ -74,7 +74,7 @@ class _TabletPlannerState extends ConsumerState<TabletPlanner> {
                   icon: Icons.shopping_cart_outlined,
                   expand: false,
                   height: 48,
-                  onPressed: () => generateWeekShopping(context, ref),
+                  onPressed: () => generateShoppingList(context, ref),
                 ),
               ]),
               const SizedBox(height: 20),

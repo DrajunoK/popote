@@ -214,12 +214,17 @@ class AppStore extends Notifier<AppData> {
     final inRange = state.entries
         .where((e) => e.groupId == g.id && !e.date.isBefore(f) && !e.date.isAfter(t))
         .toList();
+    // Une autre période = de nouvelles courses : rien ne doit rester coché d'une semaine à l'autre.
+    final prev = state.lists[g.id];
+    final samePeriod = prev != null && prev.from == f && prev.to == t;
     final items = gen.generateShopping(
       groupId: g.id,
       entries: inRange,
       recipes: {for (final r in state.recipes) r.id: r},
       pantry: state.pantry,
-      existing: state.shopping,
+      existing: samePeriod
+          ? state.shopping
+          : [for (final i in state.shopping) i.groupId == g.id ? i.copyWith(checked: false) : i],
       newId: newId,
     );
     _set(state.copyWith(

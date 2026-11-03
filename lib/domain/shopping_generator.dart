@@ -9,6 +9,7 @@ class _Acc {
   final Aisle aisle;
   double qty = 0;
   final Set<String> sources = {};
+  DateTime? first;
 }
 
 /// Ramène les unités compatibles à une base commune (g, ml) — F-SHP-02.
@@ -59,6 +60,7 @@ List<ShoppingItem> generateShopping({
       final a = acc.putIfAbsent(key, () => _Acc(ing.name, u, ing.aisle));
       a.qty += q;
       a.sources.add(recipe.title);
+      if (a.first == null || e.date.isBefore(a.first!)) a.first = e.date;
     }
   }
 
@@ -80,6 +82,7 @@ List<ShoppingItem> generateShopping({
       manual: false,
       sources: (a.sources.toList()..sort()),
       checked: old?.checked ?? false,
+      firstUse: a.first,
     );
   }).toList()
     ..sort((a, b) => a.aisle.index != b.aisle.index ? a.aisle.index - b.aisle.index : a.label.compareTo(b.label));

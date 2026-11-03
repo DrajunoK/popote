@@ -367,6 +367,7 @@ class ShoppingItem {
     required this.manual,
     this.sources = const [],
     this.checked = false,
+    this.firstUse,
   });
 
   final String id;
@@ -376,6 +377,9 @@ class ShoppingItem {
   final String unit;
   final Aisle aisle;
 
+  /// Premier jour planifié où l'article sert ; permet de signaler un produit frais à acheter plus tard.
+  final DateTime? firstUse;
+
   /// `true` : ajout libre, jamais supprimé par une régénération (F-SHP-07).
   final bool manual;
 
@@ -384,6 +388,12 @@ class ShoppingItem {
   final bool checked;
 
   String get key => '${label.toLowerCase()}|$unit';
+
+  /// Produit frais dont le premier repas tombe au moins [days] jours après le début de la période.
+  bool buyLater(DateTime from, {int days = 4}) =>
+      firstUse != null &&
+      (aisle == Aisle.fresh || aisle == Aisle.fruitsVeg) &&
+      firstUse!.difference(from).inDays >= days;
 
   ShoppingItem copyWith({double? qty, bool? checked, String? unit}) => ShoppingItem(
         id: id,
@@ -395,6 +405,7 @@ class ShoppingItem {
         manual: manual,
         sources: sources,
         checked: checked ?? this.checked,
+        firstUse: firstUse,
       );
 
   Map<String, dynamic> toJson() => {
@@ -407,6 +418,7 @@ class ShoppingItem {
         'm': manual,
         's': sources,
         'c': checked,
+        if (firstUse != null) 'd': dayKey(firstUse!),
       };
 
   factory ShoppingItem.fromJson(Map<String, dynamic> j) => ShoppingItem(
@@ -419,6 +431,7 @@ class ShoppingItem {
         manual: j['m'] as bool,
         sources: (j['s'] as List).cast<String>(),
         checked: j['c'] as bool,
+        firstUse: j['d'] == null ? null : parseDay(j['d'] as String),
       );
 }
 

@@ -11,21 +11,98 @@ import '../../shared/widgets.dart';
 import 'entry_actions.dart';
 import 'tablet_planner.dart';
 
-/// Génère la liste de courses de la semaine affichée puis ouvre l'onglet Courses.
-void generateWeekShopping(BuildContext context, WidgetRef ref) {
+/// Demande la période puis génère la liste de courses et ouvre l'onglet Courses.
+///
+/// Par défaut : de aujourd'hui (si la semaine affichée est la semaine en cours, les repas passés
+/// sont déjà faits) ou du lundi, jusqu'au dimanche de la semaine affichée.
+Future<void> generateShoppingList(BuildContext context, WidgetRef ref) async {
   final monday = ref.read(visibleWeekProvider);
   final sunday = monday.add(const Duration(days: 6));
-  final entries = ref.read(groupEntriesProvider);
-  final hasRecipes = entries.any((e) =>
-      e.recipeId != null && !e.date.isBefore(monday) && !e.date.isAfter(sunday));
-  if (!hasRecipes) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(const SnackBar(content: Text('Planifiez d’abord quelques repas avec des ingrédients.')));
-    return;
-  }
-  ref.read(appStoreProvider.notifier).generateShopping(monday, sunday);
+  final today = dateOnly(DateTime.now());
+  final current = !today.isBefore(monday) && !today.isAfter(sunday);
+  final range = await showModalBottomSheet<DateTimeRange>(
+    context: context,
+    isScrollControlled: true,
+    constraints: const BoxConstraints(maxWidth: 560),
+    builder: (_) => _ShoppingPeriodSheet(start: current ? today : monday, weekEnd: sunday),
+  );
+  if (range == null || !context.mounted) return;
+  ref.read(appStoreProvider.notifier).generateShopping(range.start, range.end);
   context.go('/shopping');
+}
+
+class _ShoppingPeriodSheet extends ConsumerStatefulWidget {
+  const _ShoppingPeriodSheet({required this.start, required this.weekEnd});
+
+  final DateTime start;
+  final DateTime weekEnd;
+
+  @override
+  ConsumerState<_ShoppingPeriodSheet> createState() => _ShoppingPeriodSheetState();
+}
+
+class _ShoppingPeriodSheetState extends ConsumerState<_ShoppingPeriodSheet> {
+  late DateTimeRange _range = DateTimeRange(start: widget.start, end: widget.weekEnd);
+
+  DateTime get _twoWeeksEnd => widget.weekEnd.add(const Duration(days: 7));
+  bool get _isOneWeek => _range.start == widget.start && _range.end == widget.weekEnd;
+  bool get _isTwoWeeks => _range.start == widget.start && _range.end == _twoWeeksEnd;
+
+  Future<void> _pickDates() async {
+    final picked = await showDateRangePicker(
+      context: context,
+      initialDateRange: _range,
+      firstDate: widget.start.subtract(const Duration(days: 60)),
+      lastDate: widget.start.add(const Duration(days: 365)),
+      helpText: 'Période des courses',
+      locale: const Locale('fr'),
+    );
+    if (picked != null) setState(() => _range = DateTimeRange(start: dateOnly(picked.start), end: dateOnly(picked.end)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final recipes = ref.watch(recipesByIdProvider);
+    final meals = ref.watch(groupEntriesProvider).where((e) {
+      final r = recipes[e.recipeId];
+      return r != null && !r.isSimple && !e.date.isBefore(_range.start) && !e.date.isAfter(_range.end);
+    }).length;
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('Courses pour…', style: c.heading(22)),
+          const SizedBox(height: 4),
+          Text('Du ${dayMonth(_range.start)} au ${dayMonth(_range.end)} · ${pluralize(meals, 'repas', 'repas')}',
+              style: TextStyle(color: c.muted)),
+          const SizedBox(height: 14),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            FilterPill(
+              label: 'Cette semaine',
+              active: _isOneWeek,
+              onTap: () => setState(() => _range = DateTimeRange(start: widget.start, end: widget.weekEnd)),
+            ),
+            FilterPill(
+              label: '2 semaines',
+              active: _isTwoWeeks,
+              onTap: () => setState(() => _range = DateTimeRange(start: widget.start, end: _twoWeeksEnd)),
+            ),
+            FilterPill(label: 'Choisir les dates', active: !_isOneWeek && !_isTwoWeeks, onTap: _pickDates),
+          ]),
+          const SizedBox(height: 10),
+          Text('La liste actuelle est remplacée ; les produits frais des repas lointains sont signalés.',
+              style: TextStyle(fontSize: 12, color: c.muted)),
+          const SizedBox(height: 16),
+          PillButton(
+            label: meals == 0 ? 'Aucun repas avec ingrédients' : 'Générer la liste',
+            icon: Icons.shopping_cart_outlined,
+            onPressed: meals == 0 ? null : () => Navigator.pop(context, _range),
+          ),
+        ]),
+      ),
+    );
+  }
 }
 
 class PlannerScreen extends ConsumerWidget {
@@ -187,7 +264,7 @@ class _PhonePlannerState extends ConsumerState<_PhonePlanner> {
                   label: 'Générer les courses',
                   icon: Icons.shopping_cart_outlined,
                   height: 48,
-                  onPressed: () => generateWeekShopping(context, ref),
+                  onPressed: () => generateShoppingList(context, ref),
                 ),
               ),
             ]),
