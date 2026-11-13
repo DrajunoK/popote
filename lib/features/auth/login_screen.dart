@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/pwa_install.dart';
 import '../../core/theme.dart';
 import '../../data/auth_service.dart';
 import '../groups/join_group.dart';
@@ -69,6 +70,7 @@ class LoginScreen extends ConsumerWidget {
                   leading: Icon(Icons.link, size: 20, color: c.onSurface),
                   label: 'J’ai un code d’invitation',
                 ),
+                const _InstallButton(),
                 const SizedBox(height: 16),
                 Text(
                   'Espace privé : connectez-vous pour entrer, ou rejoignez un groupe avec un code.',
@@ -132,6 +134,45 @@ class _AuthButton extends StatelessWidget {
               Text(label, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: foreground)),
             ]),
           ),
+        ),
+      );
+}
+
+/// « Installer l'appli » : visible seulement sur le web, tant que Popote n'est pas installée.
+class _InstallButton extends StatelessWidget {
+  const _InstallButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return ValueListenableBuilder<PwaInstallState>(
+      valueListenable: pwaInstall,
+      builder: (context, state, _) {
+        if (state == PwaInstallState.none) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: _AuthButton(
+            height: 52,
+            background: c.tiles[1].bg,
+            foreground: c.tiles[1].fg,
+            onTap: () => state == PwaInstallState.available ? promptPwaInstall() : _showIosHelp(context),
+            leading: Icon(Icons.install_mobile, size: 20, color: c.tiles[1].fg),
+            label: 'Installer l’appli',
+          ),
+        );
+      },
+    );
+  }
+
+  void _showIosHelp(BuildContext context) => showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Installer Popote'),
+          content: const Text(
+            'Dans Safari : touchez Partager (le carré avec une flèche), '
+            'puis « Sur l’écran d’accueil ».',
+          ),
+          actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))],
         ),
       );
 }

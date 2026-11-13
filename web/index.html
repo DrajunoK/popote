@@ -32,6 +32,38 @@
 
   <title>Popote</title>
   <link rel="manifest" href="manifest.json">
+  <!-- Installation PWA : Chrome envoie beforeinstallprompt une seule fois, on le garde pour le bouton de l'écran de connexion. -->
+  <script>
+    window.popoteInstall = {
+      _event: null,
+      onChange: null,
+      available: function () { return !!this._event; },
+      isStandalone: function () {
+        return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+      },
+      isIos: function () {
+        return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+          (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      },
+      prompt: async function () {
+        if (!this._event) return 'unavailable';
+        this._event.prompt();
+        var choice = await this._event.userChoice;
+        this._event = null;
+        if (this.onChange) this.onChange();
+        return choice.outcome;
+      }
+    };
+    window.addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();
+      window.popoteInstall._event = e;
+      if (window.popoteInstall.onChange) window.popoteInstall.onChange();
+    });
+    window.addEventListener('appinstalled', function () {
+      window.popoteInstall._event = null;
+      if (window.popoteInstall.onChange) window.popoteInstall.onChange();
+    });
+  </script>
 </head>
 <body>
   <!--
