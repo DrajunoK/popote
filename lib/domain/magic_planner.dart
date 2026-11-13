@@ -55,16 +55,29 @@ MagicResult planMagic({
     final remaining = order.length - idx;
     Recipe? chosen;
     var found = 0;
-    for (var level = 0; level <= 3 && chosen == null; level++) {
-      final scored = <(Recipe, double)>[];
-      for (final r in pool) {
-        final s = _score(r, slot, placed, remaining, lastCooked, favorites, rules, today, level);
-        if (s != null) scored.add((r, s));
+    // Quota devenu impératif (autant de créneaux restants que de recettes manquantes) :
+    // mieux vaut assouplir les autres règles que le rater, sinon un créneau plus tard
+    // ne laisse plus aucun choix valable.
+    final forced = <bool Function(Recipe)>[
+      if (rules.veg && _missing(placed, rules.minVeg, (x) => x.protein?.isMeatless ?? false) >= remaining)
+        (x) => x.protein?.isMeatless ?? false,
+      if (rules.fish && _missing(placed, rules.minFish, (x) => x.protein == Protein.fish) >= remaining)
+        (x) => x.protein == Protein.fish,
+    ];
+    for (final mustMatch in [if (forced.isNotEmpty) forced, <bool Function(Recipe)>[]]) {
+      for (var level = 0; level <= 3 && chosen == null; level++) {
+        final scored = <(Recipe, double)>[];
+        for (final r in pool) {
+          if (mustMatch.isNotEmpty && !mustMatch.any((t) => t(r))) continue;
+          final s = _score(r, slot, placed, remaining, lastCooked, favorites, rules, today, level);
+          if (s != null) scored.add((r, s));
+        }
+        if (scored.isEmpty) continue;
+        scored.sort((a, b) => b.$2.compareTo(a.$2));
+        chosen = _weightedPick(scored.take(5).toList(), rnd);
+        found = level;
       }
-      if (scored.isEmpty) continue;
-      scored.sort((a, b) => b.$2.compareTo(a.$2));
-      chosen = _weightedPick(scored.take(5).toList(), rnd);
-      found = level;
+      if (chosen != null) break;
     }
     if (chosen == null) continue;
     if (found > 1) {
@@ -87,6 +100,9 @@ MagicResult planMagic({
   }
   return MagicResult(picks, warnings);
 }
+
+int _missing(Map<int, Recipe> placed, int min, bool Function(Recipe) test) =>
+    min - placed.values.where(test).length;
 
 Recipe _weightedPick(List<(Recipe, double)> top, math.Random rnd) {
   final min = top.map((e) => e.$2).reduce(math.min);

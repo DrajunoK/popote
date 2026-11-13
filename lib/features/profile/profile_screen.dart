@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme.dart';
 import '../../data/app_store.dart';
 import '../../data/auth_service.dart';
+import '../../data/models.dart';
 import '../../data/sync_service.dart';
 import '../../shared/widgets.dart';
 
@@ -62,6 +63,23 @@ class ProfileScreen extends ConsumerWidget {
                 child: Column(children: [
                   const _InfoRow(label: 'Langue', value: 'Français', divider: true),
                   const _InfoRow(label: 'Taille du texte', value: 'Système', divider: true),
+                  SwitchListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14),
+                    value: data.currentGroup.lunchEnabled,
+                    onChanged: (on) {
+                      final g = data.currentGroup;
+                      store.setSlots(g.id, [
+                        for (final k in SlotKind.values)
+                          if (k == SlotKind.lunch ? on : g.slots.contains(k)) k,
+                      ]);
+                    },
+                    title: const Text('Repas du midi', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
+                    subtitle: Text(
+                      'Planifier aussi le midi (groupe « ${data.currentGroup.name} »)',
+                      style: TextStyle(fontSize: 12, color: c.muted),
+                    ),
+                  ),
+                  Divider(height: 1, color: c.outline),
                   SwitchListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14),
                     value: data.remindSunday,

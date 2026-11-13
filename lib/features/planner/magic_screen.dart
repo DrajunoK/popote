@@ -39,15 +39,22 @@ class _MagicScreenState extends ConsumerState<MagicScreen> {
     final group = ref.read(currentGroupProvider);
     _rules = group.rules;
     final monday = ref.read(visibleWeekProvider);
-    // Un seul repas par jour dans l'aperçu : le dîner (ou le dernier créneau du groupe).
+    // Le dîner, plus le midi si le groupe l'a activé (profil). Sans dîner ni midi : dernier créneau du groupe.
     final first0 = monday;
-    final kind = group.slots.contains(SlotKind.dinner) ? SlotKind.dinner : group.slots.last;
-    _slots = [for (var i = 0; i < 7; i++) PlanSlot(monday.add(Duration(days: i)), kind)];
+    final kinds = [
+      for (final k in [SlotKind.lunch, SlotKind.dinner])
+        if (group.slots.contains(k)) k,
+    ];
+    if (kinds.isEmpty) kinds.add(group.slots.last);
+    _slots = [
+      for (var i = 0; i < 7; i++)
+        for (final k in kinds) PlanSlot(monday.add(Duration(days: i)), k),
+    ];
     final byId = ref.read(recipesByIdProvider);
     for (final e in ref.read(groupEntriesProvider)) {
       final r = byId[e.recipeId];
       final inWeek = !e.date.isBefore(first0) && !e.date.isAfter(first0.add(const Duration(days: 6)));
-      if (r != null && inWeek && e.slot != kind) _others[PlanSlot(e.date, e.slot).ord] = r;
+      if (r != null && inWeek && !kinds.contains(e.slot)) _others[PlanSlot(e.date, e.slot).ord] = r;
     }
     // Les repas déjà planifiés sont conservés (case cochée par défaut) et verrouillés.
     if (_rules.keepExisting) {
@@ -153,8 +160,8 @@ class _MagicScreenState extends ConsumerState<MagicScreen> {
 
     final ruleChips = <(String, bool, PlannerRules Function(PlannerRules))>[
       ('Varier les protéines', _rules.vary, (r) => r.copyWith(vary: !r.vary)),
-      ('${_rules.minVeg} soirs végé min.', _rules.veg, (r) => r.copyWith(veg: !r.veg)),
-      ('${_rules.minFish} soir poisson', _rules.fish, (r) => r.copyWith(fish: !r.fish)),
+      (group.lunchEnabled ? '${_rules.minVeg} repas végé min.' : '${_rules.minVeg} soirs végé min.', _rules.veg, (r) => r.copyWith(veg: !r.veg)),
+      (group.lunchEnabled ? '${_rules.minFish} repas poisson' : '${_rules.minFish} soir poisson', _rules.fish, (r) => r.copyWith(fish: !r.fish)),
       ('Rapide en semaine', _rules.quick, (r) => r.copyWith(quick: !r.quick)),
       ('Saison', _rules.season, (r) => r.copyWith(season: !r.season)),
     ];
@@ -173,7 +180,7 @@ class _MagicScreenState extends ConsumerState<MagicScreen> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text('${group.name} · Dîners du ${dayMonth(first)} au ${dayMonth(last)}',
+                        Text('${group.name} · ${group.lunchEnabled ? 'Repas' : 'Dîners'} du ${dayMonth(first)} au ${dayMonth(last)}',
                             style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: c.muted)),
                         Row(children: [
                           Icon(Icons.auto_awesome, size: 22, color: c.tertiary),
@@ -233,6 +240,7 @@ class _MagicScreenState extends ConsumerState<MagicScreen> {
                     final slot = _slots[i];
                     return _ProposalRow(
                       slot: slot,
+                      showKind: group.lunchEnabled,
                       recipe: _proposal[slot.ord],
                       locked: _locked.contains(slot.ord),
                       onTap: () => _replace(slot),
@@ -263,6 +271,7 @@ class _MagicScreenState extends ConsumerState<MagicScreen> {
 class _ProposalRow extends StatelessWidget {
   const _ProposalRow({
     required this.slot,
+    required this.showKind,
     required this.recipe,
     required this.locked,
     required this.onTap,
@@ -270,6 +279,7 @@ class _ProposalRow extends StatelessWidget {
   });
 
   final PlanSlot slot;
+  final bool showKind;
   final Recipe? recipe;
   final bool locked;
   final VoidCallback onTap;
@@ -281,7 +291,7 @@ class _ProposalRow extends StatelessWidget {
     final r = recipe;
     final meta = r == null
         ? 'Aucune recette disponible'
-        : '${r.base?.label ?? ''} · ${formatDuration(r.totalMin)}';
+        : '${showKind ? '${slot.kind.label} · ' : ''}${r.base?.label ?? ''} · ${formatDuration(r.totalMin)}';
     return Material(
       color: c.surface,
       shape: RoundedRectangleBorder(

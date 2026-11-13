@@ -310,6 +310,9 @@ class VisibleWeek extends Notifier<DateTime> {
     return DateTime(n.year, n.month, n.day - (n.weekday - 1));
   }
 
+  /// Affiche la semaine qui contient [day].
+  void goTo(DateTime day) => state = DateTime(day.year, day.month, day.day - (day.weekday - 1));
+
   void shift(int weeks) => state = DateTime(state.year, state.month, state.day + 7 * weeks);
 
   void reset() {

@@ -563,7 +563,7 @@ class Group {
     this.personal = false,
     this.startDate,
     this.endDate,
-    this.slots = const [SlotKind.lunch, SlotKind.dinner],
+    this.slots = const [SlotKind.dinner],
     this.rules = const PlannerRules(),
     this.archived = false,
   });
@@ -581,6 +581,9 @@ class Group {
   final List<SlotKind> slots;
   final PlannerRules rules;
   final bool archived;
+
+  /// Le repas du midi est-il planifié ? Désactivé par défaut (réglable depuis le profil).
+  bool get lunchEnabled => slots.contains(SlotKind.lunch);
 
   String get initial => name.isEmpty ? '?' : name.substring(0, 1).toUpperCase();
   int get size => members.length;
@@ -649,7 +652,7 @@ class Group {
         personal: personal,
         startDate: settings['start'] == null ? null : parseDay(settings['start'] as String),
         endDate: settings['end'] == null ? null : parseDay(settings['end'] as String),
-        slots: ((settings['slots'] as List?) ?? const ['lunch', 'dinner'])
+        slots: ((settings['slots'] as List?) ?? const ['dinner'])
             .map((s) => enumByName(SlotKind.values, s))
             .whereType<SlotKind>()
             .toList(),

@@ -21,6 +21,9 @@ class TabletPlanner extends ConsumerStatefulWidget {
 }
 
 class _TabletPlannerState extends ConsumerState<TabletPlanner> {
+  /// Semaines affichées à la suite (la première est la semaine choisie).
+  static const _weeksShown = 8;
+
   int _tab = 0;
   String _query = '';
 
@@ -32,8 +35,6 @@ class _TabletPlannerState extends ConsumerState<TabletPlanner> {
     final entries = ref.watch(groupEntriesProvider);
     final recipes = ref.watch(recipesByIdProvider);
     final today = dateOnly(DateTime.now());
-    final days = [for (var i = 0; i < 7; i++) monday.add(Duration(days: i))];
-
     return Scaffold(
       body: Row(children: [
         Expanded(
@@ -60,6 +61,12 @@ class _TabletPlannerState extends ConsumerState<TabletPlanner> {
                   icon: const Icon(Icons.chevron_right),
                 ),
                 const SizedBox(width: 8),
+                IconButton(
+                  tooltip: 'Vue du mois',
+                  onPressed: () => context.push('/month'),
+                  icon: const Icon(Icons.calendar_view_month_outlined),
+                ),
+                const SizedBox(width: 8),
                 PillButton(
                   label: 'Remplir la semaine',
                   icon: Icons.auto_awesome,
@@ -79,60 +86,19 @@ class _TabletPlannerState extends ConsumerState<TabletPlanner> {
               ]),
               const SizedBox(height: 20),
               Expanded(
-                child: Column(children: [
-                  SizedBox(
-                    height: 48,
-                    child: Row(children: [
-                      const SizedBox(width: 64),
-                      for (final d in days)
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 8),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: d == today ? c.primary : null,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                                Text(weekdayShort[d.weekday - 1],
-                                    style: TextStyle(
-                                        fontSize: 12, fontWeight: FontWeight.w500, color: d == today ? c.onPrimary : c.onSurface)),
-                                Text('${d.day}',
-                                    style: TextStyle(
-                                        fontSize: 17, fontWeight: FontWeight.w600, color: d == today ? c.onPrimary : c.onSurface)),
-                              ]),
-                            ),
-                          ),
-                        ),
-                    ]),
+                // Plusieurs semaines empilées : avec un seul repas par jour, une semaine ne remplit
+                // pas la hauteur de l'écran, autant voir les suivantes sans changer de page.
+                child: ListView.builder(
+                  itemCount: _weeksShown,
+                  itemBuilder: (_, w) => _WeekBlock(
+                    monday: DateTime(monday.year, monday.month, monday.day + 7 * w),
+                    first: w == 0,
+                    today: today,
+                    slots: group.slots,
+                    entries: entries,
+                    recipes: recipes,
                   ),
-                  for (final slot in group.slots)
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Row(children: [
-                          SizedBox(
-                            width: 64,
-                            child: Text(slot.label.toUpperCase(),
-                                style: TextStyle(
-                                    fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.66, color: c.slotColor(slot))),
-                          ),
-                          for (final d in days)
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.only(left: 8),
-                                child: _SlotCell(
-                                  date: d,
-                                  slot: slot,
-                                  entry: entries.where((e) => e.date == d && e.slot == slot).firstOrNull,
-                                  recipes: recipes,
-                                ),
-                              ),
-                            ),
-                        ]),
-                      ),
-                    ),
-                ]),
+                ),
               ),
             ]),
           ),
@@ -324,6 +290,97 @@ class _LibraryRow extends StatelessWidget {
             Text(formatDuration(recipe.totalMin), style: TextStyle(fontSize: 12, color: c.muted)),
           ]),
         ),
+      ]),
+    );
+  }
+}
+
+/// Une semaine : en-tête des jours puis une ligne par créneau, de hauteur fixe.
+class _WeekBlock extends StatelessWidget {
+  const _WeekBlock({
+    required this.monday,
+    required this.first,
+    required this.today,
+    required this.slots,
+    required this.entries,
+    required this.recipes,
+  });
+
+  // Assez haut pour un titre sur 3 lignes (ex. « Risotto champignons » dans une colonne étroite).
+  static const slotHeight = 184.0;
+
+  final DateTime monday;
+  final bool first;
+  final DateTime today;
+  final List<SlotKind> slots;
+  final List<PlanEntry> entries;
+  final Map<String, Recipe> recipes;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final days = [for (var i = 0; i < 7; i++) monday.add(Duration(days: i))];
+    return Padding(
+      padding: EdgeInsets.only(top: first ? 0 : 20),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        if (!first)
+          Padding(
+            padding: const EdgeInsets.only(left: 64, bottom: 6),
+            child: Text(weekLabel(monday), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: c.muted)),
+          ),
+        SizedBox(
+          height: 48,
+          child: Row(children: [
+            const SizedBox(width: 64),
+            for (final d in days)
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: d == today ? c.primary : null,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      Text(weekdayShort[d.weekday - 1],
+                          style: TextStyle(
+                              fontSize: 12, fontWeight: FontWeight.w500, color: d == today ? c.onPrimary : c.onSurface)),
+                      Text('${d.day}',
+                          style: TextStyle(
+                              fontSize: 17, fontWeight: FontWeight.w600, color: d == today ? c.onPrimary : c.onSurface)),
+                    ]),
+                  ),
+                ),
+              ),
+          ]),
+        ),
+        for (final slot in slots)
+          SizedBox(
+            height: slotHeight,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(children: [
+                SizedBox(
+                  width: 64,
+                  child: Text(slot.label.toUpperCase(),
+                      style: TextStyle(
+                          fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.66, color: c.slotColor(slot))),
+                ),
+                for (final d in days)
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: _SlotCell(
+                        date: d,
+                        slot: slot,
+                        entry: entries.where((e) => e.date == d && e.slot == slot).firstOrNull,
+                        recipes: recipes,
+                      ),
+                    ),
+                  ),
+              ]),
+            ),
+          ),
       ]),
     );
   }

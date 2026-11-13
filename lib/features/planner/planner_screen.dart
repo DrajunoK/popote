@@ -169,6 +169,13 @@ class _PhonePlannerState extends ConsumerState<_PhonePlanner> {
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 _GroupChip(group: group, onTap: () => showGroupSwitcher(context, ref)),
+                Row(mainAxisSize: MainAxisSize.min, children: [
+                  IconButton(
+                    tooltip: 'Vue du mois',
+                    onPressed: () => context.push('/month'),
+                    icon: Icon(Icons.calendar_view_month_outlined, color: c.muted),
+                  ),
+                  const SizedBox(width: 4),
                 Semantics(
                   label: 'Mon profil',
                   button: true,
@@ -178,6 +185,7 @@ class _PhonePlannerState extends ConsumerState<_PhonePlanner> {
                     child: _AvatarStack(group: group, me: user?.initial ?? 'A'),
                   ),
                 ),
+                ]),
               ]),
               const SizedBox(height: 14),
               Row(children: [

@@ -8,6 +8,7 @@ import '../data/sync_service.dart';
 import '../features/auth/login_screen.dart';
 import '../features/groups/group_screen.dart';
 import '../features/planner/magic_screen.dart';
+import '../features/planner/month_screen.dart';
 import '../features/planner/planner_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/recipes/recipe_detail_screen.dart';
@@ -49,6 +50,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(routes: [GoRoute(path: '/group', builder: (_, __) => const GroupScreen())]),
         ],
       ),
+      GoRoute(path: '/month', builder: (_, __) => const MonthScreen()),
       GoRoute(path: '/magic', builder: (_, __) => const MagicScreen()),
       GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
       GoRoute(path: '/recipe/new', builder: (_, __) => const RecipeEditorScreen()),
