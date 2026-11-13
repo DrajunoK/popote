@@ -26,7 +26,11 @@ PwaInstallState _compute() {
 
 ValueNotifier<PwaInstallState> _init() {
   final notifier = ValueNotifier(_compute());
-  _pwa?.onChange = (() => notifier.value = _compute()).toJS;
+  void onChange() {
+    notifier.value = _compute();
+  }
+
+  _pwa?.onChange = onChange.toJS;
   return notifier;
 }
 
