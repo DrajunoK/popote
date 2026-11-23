@@ -58,6 +58,8 @@ class AppStore extends Notifier<AppData> {
 
   void setTheme(String key) => _set(state.copyWith(themeKey: key));
 
+  void setPlanView(String view) => _set(state.copyWith(planView: view));
+
   void setRemind(bool on) => _set(state.copyWith(remindSunday: on));
 
   // --- Groupes -----------------------------------------------------------

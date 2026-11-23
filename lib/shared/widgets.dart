@@ -178,7 +178,8 @@ class PillButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final fg = primary ? c.onPrimary : c.onSurface;
+    final chunky = c.chunkyButtons;
+    final fg = primary ? (chunky ? Colors.white : c.onPrimary) : c.onSurface;
     final child = Row(
       mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
@@ -187,13 +188,17 @@ class PillButton extends StatelessWidget {
         Flexible(
           child: Text(label,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: fg)),
+              style: TextStyle(fontSize: 15, fontWeight: chunky ? FontWeight.w700 : FontWeight.w600, color: fg)),
         ),
       ],
     );
-    return Material(
-      color: primary ? c.primary : c.surface,
-      shape: StadiumBorder(side: primary ? BorderSide.none : BorderSide(color: c.outlineStrong)),
+    final button = Material(
+      color: primary ? (chunky ? c.onSurface : c.primary) : c.surface,
+      shape: StadiumBorder(
+        side: primary
+            ? BorderSide.none
+            : BorderSide(color: chunky ? c.onSurface : c.outlineStrong, width: chunky ? 2 : 1),
+      ),
       child: InkWell(
         customBorder: const StadiumBorder(),
         onTap: onPressed,
@@ -204,6 +209,15 @@ class PillButton extends StatelessWidget {
           child: child,
         ),
       ),
+    );
+    if (!(chunky && primary && onPressed != null)) return button;
+    // Ombre pleine « autocollant » sous le bouton principal.
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(height),
+        boxShadow: [BoxShadow(color: c.primary, offset: const Offset(0, 4))],
+      ),
+      child: button,
     );
   }
 }

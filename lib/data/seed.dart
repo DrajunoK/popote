@@ -1213,7 +1213,8 @@ AppData seedData() {
     shopping: const [],
     lists: const {},
     pantry: {'sel', 'poivre', 'huile d’olive'},
-    themeKey: 'nuit',
+    themeKey: 'bento',
     remindSunday: true,
+    planView: 'day',
   );
 }

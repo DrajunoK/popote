@@ -61,6 +61,20 @@ class ProfileScreen extends ConsumerWidget {
               Container(
                 decoration: BoxDecoration(color: c.surface, border: Border.all(color: c.outline), borderRadius: BorderRadius.circular(16)),
                 child: Column(children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      const Text('Vue du planning à l’ouverture',
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
+                      const SizedBox(height: 8),
+                      SegmentedTabs(
+                        labels: const ['Jour', 'Semaine', 'Mois'],
+                        index: const ['day', 'week', 'month'].indexOf(data.planView).clamp(0, 2),
+                        onChanged: (i) => store.setPlanView(const ['day', 'week', 'month'][i]),
+                      ),
+                    ]),
+                  ),
+                  Divider(height: 1, color: c.outline),
                   const _InfoRow(label: 'Langue', value: 'Français', divider: true),
                   const _InfoRow(label: 'Taille du texte', value: 'Système', divider: true),
                   SwitchListTile(

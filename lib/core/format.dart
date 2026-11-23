@@ -13,6 +13,11 @@ String dayTitle(DateTime d) => capitalize(_day.format(d));
 /// « 26 oct »
 String dayMonth(DateTime d) => _dayMonth.format(d).replaceAll('.', '');
 
+final _month = DateFormat('MMMM', 'fr');
+
+/// « novembre »
+String monthName(DateTime d) => _month.format(d);
+
 const weekdayShort = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 
 DateTime mondayOf(DateTime d) => dateOnly(d).subtract(Duration(days: d.weekday - 1));

@@ -102,21 +102,7 @@ class _ShoppingScreenState extends ConsumerState<ShoppingScreen> {
                   const SizedBox(height: 10),
                   Text(subtitle, style: TextStyle(fontSize: 13, color: c.muted)),
                   const SizedBox(height: 10),
-                  Row(children: [
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: items.isEmpty ? 0 : done / items.length,
-                          minHeight: 8,
-                          backgroundColor: c.outline,
-                          valueColor: AlwaysStoppedAnimation(c.secondary),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text('$done / ${items.length}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.secondary)),
-                  ]),
+                  _BasketCard(done: done, total: items.length),
                 ]),
               ),
               Expanded(
@@ -359,6 +345,62 @@ class _ItemTile extends StatelessWidget {
             ]),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Carte de progression : anneau de pourcentage et nombre d'articles restants.
+class _BasketCard extends StatelessWidget {
+  const _BasketCard({required this.done, required this.total});
+
+  final int done;
+  final int total;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final ratio = total == 0 ? 0.0 : done / total;
+    final left = total - done;
+    final title = total == 0 ? 'Aucun article' : '$done article${done > 1 ? 's' : ''} sur $total';
+    final sub = total == 0
+        ? 'Ajoutez un article ou générez la liste depuis le planning.'
+        : left == 0
+            ? 'Tout est dans le panier !'
+            : 'Il reste ${pluralize(left, 'article')} à prendre';
+    return Semantics(
+      label: '$title. $sub',
+      excludeSemantics: true,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(color: c.inverse, borderRadius: BorderRadius.circular(22)),
+        child: Row(children: [
+          SizedBox(
+            width: 60,
+            height: 60,
+            child: Stack(alignment: Alignment.center, children: [
+              SizedBox.expand(
+                child: CircularProgressIndicator(
+                  value: ratio,
+                  strokeWidth: 7,
+                  strokeCap: StrokeCap.round,
+                  backgroundColor: c.onInverse.withAlpha(46),
+                  valueColor: AlwaysStoppedAnimation(c.tertiary),
+                ),
+              ),
+              Text('${(ratio * 100).round()} %',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: c.onInverse)),
+            ]),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(title, style: c.heading(18, color: c.onInverse)),
+              const SizedBox(height: 3),
+              Text(sub, style: TextStyle(fontSize: 13, color: c.onInverse.withAlpha(200))),
+            ]),
+          ),
+        ]),
       ),
     );
   }

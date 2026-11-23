@@ -10,7 +10,7 @@ class Tone {
   final Color fg;
 }
 
-enum HeadingFont { fraunces, inter, spaceGrotesk }
+enum HeadingFont { fraunces, inter, spaceGrotesk, bricolage }
 
 /// Design tokens d'un thème (spec §6.2). Un `ThemeExtension` par thème.
 @immutable
@@ -48,6 +48,7 @@ class MijoteColors extends ThemeExtension<MijoteColors> {
     required this.headingFont,
     required this.headingWeight,
     required this.scrim,
+    this.chunkyButtons = false,
   });
 
   final String key;
@@ -82,6 +83,9 @@ class MijoteColors extends ThemeExtension<MijoteColors> {
   final Color slotLunch;
   final Color slotDinner;
   final Color scrim;
+
+  /// Boutons principaux « autocollant » : fond encre, ombre pleine couleur d'accent (thème Marché).
+  final bool chunkyButtons;
 
   /// Vignettes de recettes (3 teintes en rotation).
   final List<Tone> tiles;
@@ -120,6 +124,7 @@ class MijoteColors extends ThemeExtension<MijoteColors> {
       HeadingFont.fraunces => GoogleFonts.fraunces(textStyle: base),
       HeadingFont.inter => GoogleFonts.inter(textStyle: base),
       HeadingFont.spaceGrotesk => GoogleFonts.spaceGrotesk(textStyle: base),
+      HeadingFont.bricolage => GoogleFonts.bricolageGrotesque(textStyle: base),
     };
   }
 
@@ -158,10 +163,93 @@ const _lightProteins = {
   Protein.eggs: Tone(Color(0xFFEFE6CC), Color(0xFF63531A)),
 };
 
+/// « Bento » : fond gris-bleu doux, encre marine, compartiments pastel (pêche, menthe, beurre, lavande, ciel).
+const bento = MijoteColors(
+  key: 'bento',
+  name: 'Bento',
+  hint: 'Par défaut, pastel',
+  brightness: Brightness.light,
+  background: Color(0xFFEBEFF7),
+  surface: Color(0xFFFFFFFF),
+  surfaceVariant: Color(0xFFDFE5F2),
+  outline: Color(0xFFD9DFEE),
+  outlineStrong: Color(0xFFB3BCD6),
+  onSurface: Color(0xFF232B4A),
+  soft: Color(0xFF464F72),
+  muted: Color(0xFF5E6788),
+  primary: Color(0xFF232B4A),
+  onPrimary: Color(0xFFFFFFFF),
+  primaryContainer: Color(0xFFDCD0F7),
+  onPrimaryContainer: Color(0xFF3E2A85),
+  secondary: Color(0xFF1F6B4C),
+  onSecondary: Color(0xFFFFFFFF),
+  tertiary: Color(0xFFFFD35A),
+  inverse: Color(0xFF232B4A),
+  onInverse: Color(0xFFF4F6FB),
+  danger: Color(0xFFB3321E),
+  track: Color(0xFFCBD3E8),
+  checkOutline: Color(0xFF8791B2),
+  slotBreakfast: Color(0xFF8A6500),
+  slotLunch: Color(0xFF1F6B4C),
+  slotDinner: Color(0xFFB84A1E),
+  scrim: Color(0xFF232B4A),
+  tiles: [
+    Tone(Color(0xFFFFD9C6), Color(0xFF9A3A12)),
+    Tone(Color(0xFFBDE8D4), Color(0xFF1F6B4C)),
+    Tone(Color(0xFFFFEBAE), Color(0xFF6E5000)),
+    Tone(Color(0xFFDCD0F7), Color(0xFF4A3399)),
+    Tone(Color(0xFFC9E0F7), Color(0xFF1F5E96)),
+  ],
+  proteins: _lightProteins,
+  headingFont: HeadingFont.bricolage,
+  headingWeight: FontWeight.w800,
+);
+
+/// « Marché » : fond vert pâle, étiquettes colorées façon étal, rouge tomate adouci, encre vert sombre.
+const marche = MijoteColors(
+  key: 'marche',
+  name: 'Marché',
+  hint: 'Coloré, étal de marché',
+  brightness: Brightness.light,
+  background: Color(0xFFF3F7EE),
+  surface: Color(0xFFFFFFFF),
+  surfaceVariant: Color(0xFFE6EEDD),
+  outline: Color(0xFFDDE6D6),
+  outlineStrong: Color(0xFFB7C8B0),
+  onSurface: Color(0xFF1B2A22),
+  soft: Color(0xFF3F5247),
+  muted: Color(0xFF5B6D61),
+  primary: Color(0xFFD93A25),
+  onPrimary: Color(0xFFFFFFFF),
+  primaryContainer: Color(0xFFFFE0DA),
+  onPrimaryContainer: Color(0xFFB02A17),
+  secondary: Color(0xFF2F7D4F),
+  onSecondary: Color(0xFFFFFFFF),
+  tertiary: Color(0xFFFFC21A),
+  inverse: Color(0xFF1B2A22),
+  onInverse: Color(0xFFF3F7EE),
+  danger: Color(0xFFA8321C),
+  track: Color(0xFFCFDCC8),
+  checkOutline: Color(0xFF86998B),
+  slotBreakfast: Color(0xFF8A6A10),
+  slotLunch: Color(0xFF2F7D4F),
+  slotDinner: Color(0xFFD93A25),
+  scrim: Color(0xFF1B2A22),
+  tiles: [
+    Tone(Color(0xFFFFE0DA), Color(0xFF9A3F2B)),
+    Tone(Color(0xFFD8EEDD), Color(0xFF25663F)),
+    Tone(Color(0xFFFFF0BF), Color(0xFF6B5000)),
+  ],
+  proteins: _lightProteins,
+  headingFont: HeadingFont.bricolage,
+  headingWeight: FontWeight.w800,
+  chunkyButtons: true,
+);
+
 const nuit = MijoteColors(
   key: 'nuit',
   name: 'Nuit',
-  hint: 'Par défaut',
+  hint: 'Sombre',
   brightness: Brightness.dark,
   background: Color(0xFF14161B),
   surface: Color(0xFF1E2229),
@@ -315,13 +403,15 @@ const myrtille = MijoteColors(
 );
 
 const appThemes = <String, MijoteColors>{
+  'bento': bento,
+  'marche': marche,
   'nuit': nuit,
   'terracotta': terracotta,
   'menthe': menthe,
   'myrtille': myrtille,
 };
 
-MijoteColors paletteFor(String key) => appThemes[key] ?? nuit;
+MijoteColors paletteFor(String key) => appThemes[key] ?? bento;
 
 /// `ThemeData` Material 3 construit depuis les tokens.
 ThemeData buildTheme(MijoteColors c) {

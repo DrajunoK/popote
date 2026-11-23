@@ -14,7 +14,10 @@ final _monthTitle = DateFormat('MMMM yyyy', 'fr');
 /// Vue mensuelle façon agenda : chaque jour montre ses repas planifiés (pastille pleine)
 /// et ceux qui manquent encore (pastille vide). Un appui ouvre la semaine du jour.
 class MonthScreen extends ConsumerStatefulWidget {
-  const MonthScreen({super.key});
+  const MonthScreen({super.key, this.onOpenDay});
+
+  /// Si renseigné, la vue est intégrée au planning (sans bouton retour) et ce rappel remplace la navigation.
+  final void Function(DateTime day)? onOpenDay;
 
   @override
   ConsumerState<MonthScreen> createState() => _MonthScreenState();
@@ -31,6 +34,7 @@ class _MonthScreenState extends ConsumerState<MonthScreen> {
   void _shift(int months) => setState(() => _month = DateTime(_month.year, _month.month + months));
 
   void _open(DateTime day) {
+    if (widget.onOpenDay != null) return widget.onOpenDay!(day);
     ref.read(visibleWeekProvider.notifier).goTo(day);
     context.go('/planning');
   }
@@ -77,8 +81,11 @@ class _MonthScreenState extends ConsumerState<MonthScreen> {
               padding: const EdgeInsets.fromLTRB(12, 16, 12, 12),
               child: Column(children: [
                 Row(children: [
-                  RoundIconButton(icon: Icons.chevron_left, label: 'Retour au planning', onTap: () => context.pop()),
-                  const SizedBox(width: 6),
+                  if (widget.onOpenDay == null) ...[
+                    RoundIconButton(icon: Icons.chevron_left, label: 'Retour au planning', onTap: () => context.pop()),
+                    const SizedBox(width: 6),
+                  ] else
+                    const SizedBox(width: 48),
                   IconButton(
                     tooltip: 'Mois précédent',
                     onPressed: () => _shift(-1),

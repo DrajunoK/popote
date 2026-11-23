@@ -9,6 +9,7 @@ import '../../data/models.dart';
 import '../../shared/recipe_visual.dart';
 import '../../shared/widgets.dart';
 import 'entry_actions.dart';
+import 'month_screen.dart';
 import 'tablet_planner.dart';
 
 /// Demande la période puis génère la liste de courses et ouvre l'onglet Courses.
@@ -126,9 +127,15 @@ class _PhonePlanner extends ConsumerStatefulWidget {
   ConsumerState<_PhonePlanner> createState() => _PhonePlannerState();
 }
 
+const _views = ['day', 'week', 'month'];
+
 class _PhonePlannerState extends ConsumerState<_PhonePlanner> {
   final _keys = List.generate(7, (_) => GlobalKey());
   int _selected = -1;
+
+  /// Vue affichée : celle choisie dans le profil à l'ouverture, modifiable ensuite sans l'enregistrer.
+  late int _view = _views.indexOf(ref.read(appStoreProvider).planView).clamp(0, 2);
+  DateTime _day = dateOnly(DateTime.now());
 
   int _initialSelection(DateTime monday) {
     final today = dateOnly(DateTime.now());
@@ -144,21 +151,36 @@ class _PhonePlannerState extends ConsumerState<_PhonePlanner> {
     }
   }
 
+  void _openDay(DateTime day) {
+    ref.read(visibleWeekProvider.notifier).goTo(day);
+    setState(() {
+      _day = dateOnly(day);
+      _view = 0;
+    });
+  }
+
+  void _setView(int i) {
+    if (i == 0) {
+      // En revenant au jour, on suit la semaine affichée.
+      final monday = ref.read(visibleWeekProvider);
+      final today = dateOnly(DateTime.now());
+      final inWeek = !today.isBefore(monday) && !today.isAfter(monday.add(const Duration(days: 6)));
+      _day = inWeek ? today : monday;
+    }
+    setState(() => _view = i);
+  }
+
+  void _shiftDay(int delta) {
+    final next = _day.add(Duration(days: delta));
+    ref.read(visibleWeekProvider.notifier).goTo(next);
+    setState(() => _day = dateOnly(next));
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final monday = ref.watch(visibleWeekProvider);
     final group = ref.watch(currentGroupProvider);
-    final entries = ref.watch(groupEntriesProvider);
-    final recipes = ref.watch(recipesByIdProvider);
     final user = ref.watch(appStoreProvider.select((d) => d.user));
-    final today = dateOnly(DateTime.now());
-    final selected = _selected >= 0 ? _selected : _initialSelection(monday);
-
-    final days = [for (var i = 0; i < 7; i++) monday.add(Duration(days: i))];
-    PlanEntry? entryAt(DateTime d, SlotKind s) =>
-        entries.where((e) => e.date == d && e.slot == s).firstOrNull;
-    final weekEmpty = !days.any((d) => entries.any((e) => e.date == d));
 
     return Scaffold(
       body: SafeArea(
@@ -166,16 +188,9 @@ class _PhonePlannerState extends ConsumerState<_PhonePlanner> {
         child: Column(children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child: Column(children: [
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 _GroupChip(group: group, onTap: () => showGroupSwitcher(context, ref)),
-                Row(mainAxisSize: MainAxisSize.min, children: [
-                  IconButton(
-                    tooltip: 'Vue du mois',
-                    onPressed: () => context.push('/month'),
-                    icon: Icon(Icons.calendar_view_month_outlined, color: c.muted),
-                  ),
-                  const SizedBox(width: 4),
                 Semantics(
                   label: 'Mon profil',
                   button: true,
@@ -185,101 +200,363 @@ class _PhonePlannerState extends ConsumerState<_PhonePlanner> {
                     child: _AvatarStack(group: group, me: user?.initial ?? 'A'),
                   ),
                 ),
-                ]),
               ]),
-              const SizedBox(height: 14),
-              Row(children: [
-                IconButton(
-                  tooltip: 'Semaine précédente',
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () => ref.read(visibleWeekProvider.notifier).shift(-1),
-                  icon: Icon(Icons.chevron_left, color: c.muted),
-                ),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      ref.read(visibleWeekProvider.notifier).reset();
-                      setState(() => _selected = -1);
-                    },
-                    child: Text(weekLabel(monday),
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: c.muted)),
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'Semaine suivante',
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () => ref.read(visibleWeekProvider.notifier).shift(1),
-                  icon: Icon(Icons.chevron_right, color: c.muted),
-                ),
-              ]),
-              Text('On mange quoi ?', style: c.heading(30, letterSpacing: -0.3)),
-              const SizedBox(height: 14),
-              Row(children: [
-                for (var i = 0; i < 7; i++)
-                  Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(left: i == 0 ? 0 : 6),
-                      child: _DayButton(
-                        date: days[i],
-                        active: i == selected,
-                        hasMeals: entries.any((e) => e.date == days[i]),
-                        onTap: () => _select(i),
-                      ),
-                    ),
-                  ),
-              ]),
+              const SizedBox(height: 12),
+              SegmentedTabs(labels: const ['Jour', 'Semaine', 'Mois'], index: _view, onChanged: _setView),
             ]),
           ),
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
-              child: Column(children: [
-                if (weekEmpty) ...[
-                  _EmptyWeek(onMagic: () => context.push('/magic')),
-                  const SizedBox(height: 12),
-                ],
-                for (var i = 0; i < 7; i++) ...[
-                  KeyedSubtree(
-                    key: _keys[i],
-                    child: _DayCard(
-                      date: days[i],
-                      isToday: days[i] == today,
-                      slots: group.slots,
-                      entryAt: (s) => entryAt(days[i], s),
-                      recipes: recipes,
-                    ),
+            child: switch (_view) {
+              0 => _dayBody(),
+              1 => _weekBody(),
+              _ => MonthScreen(onOpenDay: _openDay),
+            },
+          ),
+          if (_view != 2)
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+              decoration: BoxDecoration(color: c.background, border: Border(top: BorderSide(color: c.outline))),
+              child: Row(children: [
+                PillButton(
+                  label: 'Magique',
+                  icon: Icons.auto_awesome,
+                  primary: false,
+                  expand: false,
+                  height: 48,
+                  onPressed: () => context.push('/magic'),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: PillButton(
+                    label: 'Générer les courses',
+                    icon: Icons.shopping_cart_outlined,
+                    height: 48,
+                    onPressed: () => generateShoppingList(context, ref),
                   ),
-                  const SizedBox(height: 12),
-                ],
+                ),
               ]),
             ),
-          ),
-          Container(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-            decoration: BoxDecoration(color: c.background, border: Border(top: BorderSide(color: c.outline))),
-            child: Row(children: [
-              PillButton(
-                label: 'Magique',
-                icon: Icons.auto_awesome,
-                primary: false,
-                expand: false,
-                height: 48,
-                onPressed: () => context.push('/magic'),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: PillButton(
-                  label: 'Générer les courses',
-                  icon: Icons.shopping_cart_outlined,
-                  height: 48,
-                  onPressed: () => generateShoppingList(context, ref),
-                ),
-              ),
-            ]),
-          ),
         ]),
       ),
     );
+  }
+
+  Widget _dayBody() {
+    final c = context.c;
+    final today = dateOnly(DateTime.now());
+    return Column(children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+        child: Row(children: [
+          IconButton(
+            tooltip: 'Jour précédent',
+            onPressed: () => _shiftDay(-1),
+            icon: Icon(Icons.chevron_left, color: c.muted),
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _day = today),
+              child: Text(
+                '${dayTitle(_day)} ${monthName(_day)}',
+                textAlign: TextAlign.center,
+                style: c.heading(24, letterSpacing: -0.3),
+              ),
+            ),
+          ),
+          IconButton(
+            tooltip: 'Jour suivant',
+            onPressed: () => _shiftDay(1),
+            icon: Icon(Icons.chevron_right, color: c.muted),
+          ),
+        ]),
+      ),
+      Expanded(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+          child: _DayView(date: _day, onOpenDay: _openDay),
+        ),
+      ),
+    ]);
+  }
+
+  Widget _weekBody() {
+    final c = context.c;
+    final monday = ref.watch(visibleWeekProvider);
+    final group = ref.watch(currentGroupProvider);
+    final entries = ref.watch(groupEntriesProvider);
+    final recipes = ref.watch(recipesByIdProvider);
+    final today = dateOnly(DateTime.now());
+    final selected = _selected >= 0 ? _selected : _initialSelection(monday);
+
+    final days = [for (var i = 0; i < 7; i++) monday.add(Duration(days: i))];
+    PlanEntry? entryAt(DateTime d, SlotKind s) => entries.where((e) => e.date == d && e.slot == s).firstOrNull;
+    final weekEmpty = !days.any((d) => entries.any((e) => e.date == d));
+
+    return Column(children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            IconButton(
+              tooltip: 'Semaine précédente',
+              visualDensity: VisualDensity.compact,
+              onPressed: () => ref.read(visibleWeekProvider.notifier).shift(-1),
+              icon: Icon(Icons.chevron_left, color: c.muted),
+            ),
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  ref.read(visibleWeekProvider.notifier).reset();
+                  setState(() => _selected = -1);
+                },
+                child: Text(weekLabel(monday),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.muted)),
+              ),
+            ),
+            IconButton(
+              tooltip: 'Semaine suivante',
+              visualDensity: VisualDensity.compact,
+              onPressed: () => ref.read(visibleWeekProvider.notifier).shift(1),
+              icon: Icon(Icons.chevron_right, color: c.muted),
+            ),
+          ]),
+          Text('On mange quoi ?', style: c.heading(30, letterSpacing: -0.3)),
+          const SizedBox(height: 14),
+          Row(children: [
+            for (var i = 0; i < 7; i++)
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(left: i == 0 ? 0 : 6),
+                  child: _DayButton(
+                    date: days[i],
+                    active: i == selected,
+                    hasMeals: entries.any((e) => e.date == days[i]),
+                    onTap: () => _select(i),
+                  ),
+                ),
+              ),
+          ]),
+        ]),
+      ),
+      Expanded(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+          child: Column(children: [
+            if (weekEmpty) ...[
+              _EmptyWeek(onMagic: () => context.push('/magic')),
+              const SizedBox(height: 12),
+            ],
+            for (var i = 0; i < 7; i++) ...[
+              KeyedSubtree(
+                key: _keys[i],
+                child: _DayCard(
+                  date: days[i],
+                  isToday: days[i] == today,
+                  slots: group.slots,
+                  entryAt: (s) => entryAt(days[i], s),
+                  recipes: recipes,
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+          ]),
+        ),
+      ),
+    ]);
+  }
+}
+
+/// Vue « Jour » : le repas principal en grand, les autres créneaux dessous, puis les jours suivants.
+class _DayView extends ConsumerWidget {
+  const _DayView({required this.date, required this.onOpenDay});
+
+  final DateTime date;
+  final void Function(DateTime) onOpenDay;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.c;
+    final group = ref.watch(currentGroupProvider);
+    final entries = ref.watch(groupEntriesProvider);
+    final recipes = ref.watch(recipesByIdProvider);
+    final today = dateOnly(DateTime.now());
+    final slots = group.slots;
+    PlanEntry? at(DateTime d, SlotKind s) => entries.where((e) => e.date == d && e.slot == s).firstOrNull;
+
+    final hero = slots.contains(SlotKind.dinner) ? SlotKind.dinner : slots.last;
+    final heroLabel = date == today && hero == SlotKind.dinner ? 'Ce soir' : hero.label;
+    final heroEntry = at(date, hero);
+    final heroRecipe = heroEntry == null ? null : recipes[heroEntry.recipeId];
+    final tone = c.slotTone(hero);
+
+    Widget heroCard() {
+      if (heroEntry == null) {
+        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(heroLabel, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: c.slotColor(hero))),
+          const SizedBox(height: 8),
+          Text('Rien de prévu', style: c.heading(22)),
+          const SizedBox(height: 14),
+          PillButton(label: 'Ajouter un repas', icon: Icons.add, onPressed: () => addMealToSlot(context, ref, date, hero)),
+        ]);
+      }
+      final title = heroRecipe?.title ?? heroEntry.freeText ?? 'Repas';
+      final min = heroRecipe?.totalMin ?? 0;
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Text(heroLabel, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: c.slotColor(hero))),
+          if (min > 0) Tag(formatDuration(min), bg: tone.bg, fg: tone.fg),
+        ]),
+        const SizedBox(height: 12),
+        Row(children: [
+          if (heroRecipe != null)
+            RecipeVisual(recipe: heroRecipe, tone: tone, size: 84, radius: 42, emojiSize: 38)
+          else
+            MealTile(tone: Tone(c.surfaceVariant, c.muted), icon: Icons.inventory_2_outlined),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(title, maxLines: 3, overflow: TextOverflow.ellipsis, style: c.heading(22)),
+              const SizedBox(height: 4),
+              Text(pluralize(heroEntry.guests, 'personne'), style: TextStyle(fontSize: 13, color: c.muted)),
+            ]),
+          ),
+        ]),
+        const SizedBox(height: 16),
+        Row(children: [
+          if (heroRecipe != null) ...[
+            Expanded(
+              flex: 3,
+              child: PillButton(
+                label: 'Voir la recette',
+                height: 48,
+                onPressed: () => context.push('/recipe/${heroRecipe.id}'),
+              ),
+            ),
+            const SizedBox(width: 10),
+          ],
+          Expanded(
+            flex: 2,
+            child: PillButton(
+              label: 'Changer',
+              primary: false,
+              height: 48,
+              onPressed: () => showEntryActions(context, ref, heroEntry),
+            ),
+          ),
+        ]),
+      ]);
+    }
+
+    Widget slotStrip(SlotKind s) {
+      final e = at(date, s);
+      final t = c.slotTone(s);
+      final title = e == null ? 'Ajouter ${slotArticle(s)}' : (recipes[e.recipeId]?.title ?? e.freeText ?? 'Repas');
+      return Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: Material(
+          color: e == null ? Colors.transparent : t.bg,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: e == null ? BorderSide(color: c.outlineStrong) : BorderSide.none,
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => e == null ? addMealToSlot(context, ref, date, s) : showEntryActions(context, ref, e),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(children: [
+                Text(s.label, style: TextStyle(fontWeight: FontWeight.w700, color: e == null ? c.muted : t.fg)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(title,
+                      textAlign: TextAlign.right,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontWeight: FontWeight.w600, color: e == null ? c.primary : t.fg)),
+                ),
+              ]),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final next = [for (var i = 1; i <= 3; i++) date.add(Duration(days: i))];
+    String? nextTitle(DateTime d) {
+      for (final s in [...slots.reversed]) {
+        final e = at(d, s);
+        if (e != null) return recipes[e.recipeId]?.title ?? e.freeText ?? 'Repas';
+      }
+      return null;
+    }
+
+    SlotKind? nextSlot(DateTime d) {
+      for (final s in [...slots.reversed]) {
+        if (at(d, s) != null) return s;
+      }
+      return null;
+    }
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      AppCard(
+        radius: 24,
+        padding: const EdgeInsets.all(18),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          heroCard(),
+          for (final s in slots.where((s) => s != hero)) slotStrip(s),
+        ]),
+      ),
+      const SizedBox(height: 20),
+      Text('Les prochains jours', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: c.muted)),
+      const SizedBox(height: 8),
+      AppCard(
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        child: Column(children: [
+          for (var i = 0; i < next.length; i++)
+            InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () => onOpenDay(next[i]),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                decoration: BoxDecoration(
+                  border: i < next.length - 1 ? Border(bottom: BorderSide(color: c.outline)) : null,
+                ),
+                child: Row(children: [
+                  Container(
+                    width: 48,
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    decoration: BoxDecoration(
+                      color: c.slotTone(nextSlot(next[i]) ?? hero).bg,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Column(children: [
+                      Text(weekdayShort[next[i].weekday - 1].toLowerCase(),
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: c.soft)),
+                      Text('${next[i].day}', style: c.heading(18)),
+                    ]),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Text(nextTitle(next[i]) ?? 'Rien de prévu',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: nextTitle(next[i]) == null ? FontWeight.w500 : FontWeight.w700,
+                          color: nextTitle(next[i]) == null ? c.muted : c.onSurface,
+                        )),
+                  ),
+                  if (nextSlot(next[i]) case final s?)
+                    Text(s.label.toLowerCase(), style: TextStyle(fontSize: 13, color: c.muted))
+                  else
+                    Text('Ajouter', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: c.primary)),
+                ]),
+              ),
+            ),
+        ]),
+      ),
+    ]);
   }
 }
 
@@ -496,13 +773,12 @@ class _SlotRow extends ConsumerWidget {
         onTap: () => showEntryActions(context, ref, entry),
         onLongPress: () => showEntryActions(context, ref, entry),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            border: showDivider ? Border(bottom: BorderSide(color: c.surfaceVariant)) : null,
-          ),
+          margin: const EdgeInsets.only(top: 8, bottom: 4),
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(color: c.chunkyButtons ? tone.bg : null, borderRadius: BorderRadius.circular(16)),
           child: Row(children: [
             if (recipe case final r?)
-              RecipeVisual(recipe: r, tone: tone, size: 48)
+              RecipeVisual(recipe: r, tone: c.chunkyButtons ? Tone(Colors.white.withAlpha(170), tone.fg) : tone, size: 48)
             else
               MealTile(tone: Tone(c.surfaceVariant, c.muted), icon: Icons.inventory_2_outlined),
             const SizedBox(width: 12),

@@ -708,6 +708,7 @@ class AppData {
     required this.pantry,
     required this.themeKey,
     required this.remindSunday,
+    this.planView = 'day',
   });
 
   final UserProfile? user;
@@ -724,6 +725,9 @@ class AppData {
   final String themeKey;
   final bool remindSunday;
 
+  /// Vue d'ouverture du planning : `day`, `week` ou `month`.
+  final String planView;
+
   Group get currentGroup => groups.firstWhere((g) => g.id == currentGroupId, orElse: () => groups.first);
 
   AppData copyWith({
@@ -738,6 +742,7 @@ class AppData {
     Set<String>? pantry,
     String? themeKey,
     bool? remindSunday,
+    String? planView,
   }) =>
       AppData(
         user: identical(user, _keep) ? this.user : user as UserProfile?,
@@ -751,6 +756,7 @@ class AppData {
         pantry: pantry ?? this.pantry,
         themeKey: themeKey ?? this.themeKey,
         remindSunday: remindSunday ?? this.remindSunday,
+        planView: planView ?? this.planView,
       );
 
   Map<String, dynamic> toJson() => {
@@ -765,6 +771,7 @@ class AppData {
         'pantry': pantry.toList(),
         'theme': themeKey,
         'remind': remindSunday,
+        'planView': planView,
       };
 
   factory AppData.fromJson(Map<String, dynamic> j) => AppData(
@@ -778,8 +785,9 @@ class AppData {
         lists: (j['lists'] as Map<String, dynamic>)
             .map((k, v) => MapEntry(k, ShoppingMeta.fromJson(v as Map<String, dynamic>))),
         pantry: (j['pantry'] as List).cast<String>().toSet(),
-        themeKey: j['theme'] as String? ?? 'nuit',
+        themeKey: j['theme'] as String? ?? 'bento',
         remindSunday: j['remind'] as bool? ?? true,
+        planView: j['planView'] as String? ?? 'day',
       );
 }
 
